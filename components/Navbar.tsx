@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth, UserButton } from "@clerk/nextjs";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { isSignedIn } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -15,6 +17,7 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-green-700 rounded-lg flex items-center justify-center">
@@ -42,21 +45,42 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* CTA Buttons */}
+        {/* Auth Buttons */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/sign-in"
-            className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/sign-up"
-            className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-green-800 transition-colors"
-          >
-            Get Started
-          </Link>
+          {!isSignedIn ? (
+            <>
+              <Link
+                href="/sign-in"
+                className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/sign-up"
+                className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-green-800 transition-colors"
+              >
+                Get Started
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/dashboard"
+                className="text-sm font-semibold text-green-700 hover:text-green-800 transition-colors mr-2"
+              >
+                Dashboard
+              </Link>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-9 h-9",
+                  },
+                }}
+              />
+            </>
+          )}
         </div>
+
       </div>
     </nav>
   );
