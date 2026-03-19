@@ -12,6 +12,9 @@ export default function Navbar() {
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "My Dashboard" },
     { href: "/leaderboard", label: "Leaderboard" },
+    { href: "/activities", label: "Activities" },     
+    { href: "/organisation", label: "Org Portal" },   
+
   ];
 
   return (

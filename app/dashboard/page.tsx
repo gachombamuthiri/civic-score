@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   getUserProfile,
-  getUserActivities,
-  createUserProfile,
+  getUserEnrollments,
   type UserProfile,
-  type Activity,
+  type Enrollment,
 } from "@/lib/firestore";
 
 function getTier(points: number) {
@@ -26,26 +26,32 @@ const SAMPLE_REWARDS = [
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       if (!user) return;
       try {
-        let userProfile = await getUserProfile(user.id);
+        const userProfile = await getUserProfile(user.id);
+
+        // New user — no profile → go to role selection
         if (!userProfile) {
-          await createUserProfile(
-            user.id,
-            user.fullName ?? "Citizen",
-            user.primaryEmailAddress?.emailAddress ?? ""
-          );
-          userProfile = await getUserProfile(user.id);
+          router.push("/role-select");
+          return;
         }
+
+        // Organization user → redirect to org portal
+        if (userProfile.role === "organization") {
+          router.push("/organization");
+          return;
+        }
+
         setProfile(userProfile);
-        const userActivities = await getUserActivities(user.id);
-        setActivities(userActivities);
+        const userEnrollments = await getUserEnrollments(user.id);
+        setEnrollments(userEnrollments);
       } catch (error) {
         console.error("Error loading dashboard:", error);
       } finally {
@@ -53,7 +59,7 @@ export default function Dashboard() {
       }
     }
     if (isLoaded) loadData();
-  }, [user, isLoaded]);
+  }, [user, isLoaded, router]);
 
   if (!isLoaded || loading) {
     return (
@@ -70,15 +76,7 @@ export default function Dashboard() {
   const redeemablePoints = profile?.redeemablePoints ?? 0;
   const tier = getTier(totalPoints);
   const progressPct = tier.next > 0 ? Math.min(Math.round((totalPoints / tier.next) * 100), 100) : 100;
-
-  const thisMonth = activities
-    .filter((a) => {
-      if (!a.date) return false;
-      const date = (a.date as { toDate?: () => Date }).toDate?.() ?? new Date(a.date as string);
-      const now = new Date();
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, a) => sum + (a.verified ? a.points : 0), 0);
+  const attendedEnrollments = enrollments.filter((e) => e.attended);
 
   return (
     <main className="min-h-screen bg-gray-50 pt-20">
@@ -89,7 +87,7 @@ export default function Dashboard() {
           <div>
             <p className="text-green-300 text-sm font-semibold mb-1">Welcome back 👋</p>
             <h1 className="text-3xl font-black text-white">{profile?.fullName ?? user?.fullName ?? "Citizen"}</h1>
-            <p className="text-green-200 text-sm mt-1">{profile?.email ?? user?.primaryEmailAddress?.emailAddress}</p>
+            <p className="text-green-200 text-sm mt-1">{profile?.email}</p>
           </div>
           <div className={`${tier.bg} border px-6 py-3 rounded-2xl text-center`}>
             <p className={`text-2xl font-black ${tier.color}`}>{tier.label}</p>
@@ -108,9 +106,9 @@ export default function Dashboard() {
             <p className="text-xs text-gray-400 mt-2">All-time earned</p>
           </div>
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <p className="text-xs font-bold text-yellow-600 uppercase tracking-widest mb-2">This Month</p>
-            <p className="text-5xl font-black text-gray-900">{thisMonth.toLocaleString()}</p>
-            <p className="text-xs text-gray-400 mt-2">Verified this month</p>
+            <p className="text-xs font-bold text-yellow-600 uppercase tracking-widest mb-2">Activities Attended</p>
+            <p className="text-5xl font-black text-gray-900">{attendedEnrollments.length}</p>
+            <p className="text-xs text-gray-400 mt-2">Verified by organizations</p>
           </div>
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2">Redeemable</p>
@@ -135,36 +133,38 @@ export default function Dashboard() {
 
         <div className="grid md:grid-cols-2 gap-8">
 
-          {/* Recent Activity */}
+          {/* My Enrollments */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="font-black text-gray-900">Recent Activity</h2>
-              <span className="text-xs text-green-700 font-semibold">View All →</span>
+              <h2 className="font-black text-gray-900">My Enrollments</h2>
+              <Link href="/activities" className="text-xs text-green-700 font-semibold">Browse Activities →</Link>
             </div>
-            {activities.length === 0 ? (
+            {enrollments.length === 0 ? (
               <div className="px-6 py-10 text-center">
-                <p className="text-3xl mb-3">📝</p>
-                <p className="text-sm font-semibold text-gray-600">No activities yet</p>
-                <p className="text-xs text-gray-400 mt-1">Submit your first civic activity to earn points!</p>
-                <Link href="/submit" className="inline-block mt-4 bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-green-800">
-                  Submit Activity
+                <p className="text-3xl mb-3">📋</p>
+                <p className="text-sm font-semibold text-gray-600">No enrollments yet</p>
+                <p className="text-xs text-gray-400 mt-1">Browse activities and enroll to earn points!</p>
+                <Link href="/activities" className="inline-block mt-4 bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-green-800">
+                  Browse Activities
                 </Link>
               </div>
             ) : (
               <ul className="divide-y divide-gray-50">
-                {activities.slice(0, 5).map((activity) => (
-                  <li key={activity.id} className="px-6 py-4 flex justify-between items-center hover:bg-gray-50">
+                {enrollments.slice(0, 5).map((enrollment) => (
+                  <li key={enrollment.id} className="px-6 py-4 flex justify-between items-center hover:bg-gray-50">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{activity.action}</p>
+                      <p className="text-sm font-semibold text-gray-800 truncate">{enrollment.eventTitle}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {activity.verified ? (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">✓ Verified</span>
+                        {enrollment.attended ? (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">✅ Attended</span>
                         ) : (
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">⏳ Pending</span>
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">⏳ Upcoming</span>
                         )}
                       </div>
                     </div>
-                    <span className="text-green-700 font-black text-sm ml-4">+{activity.points}</span>
+                    <span className={`font-black text-sm ml-4 ${enrollment.attended ? "text-green-700" : "text-gray-400"}`}>
+                      {enrollment.attended ? `+${enrollment.points}` : `${enrollment.points} pts`}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -206,7 +206,7 @@ export default function Dashboard() {
           <h2 className="font-black text-gray-900 mb-5">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Submit Activity", emoji: "📝", href: "/submit" },
+              { label: "Browse Activities", emoji: "📋", href: "/activities" },
               { label: "View Leaderboard", emoji: "🏆", href: "/leaderboard" },
               { label: "Find Rewards", emoji: "🎁", href: "/rewards" },
               { label: "My Profile", emoji: "👤", href: "/profile" },
