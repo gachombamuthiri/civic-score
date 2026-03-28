@@ -7,6 +7,7 @@ import Link from "next/link";
 import {
   getUserProfile,
   getUserEnrollments,
+  createUserProfile,
   type UserProfile,
   type Enrollment,
 } from "@/lib/firestore";
@@ -35,18 +36,17 @@ export default function Dashboard() {
     async function loadData() {
       if (!user) return;
       try {
-        const userProfile = await getUserProfile(user.id);
+        let userProfile = await getUserProfile(user.id);
 
-        // New user — no profile → go to role selection
+        // New user — no profile → create citizen profile
         if (!userProfile) {
-          router.push("/role-select");
-          return;
-        }
-
-        // Organization user → redirect to org portal
-        if (userProfile.role === "organization") {
-          router.push("/organization");
-          return;
+          await createUserProfile(
+            user.id,
+            user.fullName ?? "Citizen",
+            user.primaryEmailAddress?.emailAddress ?? "",
+            "citizen"
+          );
+          userProfile = await getUserProfile(user.id);
         }
 
         setProfile(userProfile);

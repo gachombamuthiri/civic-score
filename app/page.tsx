@@ -8,7 +8,16 @@ export default function Home() {
       <main className="min-h-screen bg-white">
 
         {/* ── Hero Section ── */}
-        <section className="relative pt-32 pb-24 px-6 overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-green-800">
+        <section
+          className="relative pt-32 pb-24 px-6 overflow-hidden"
+          style={{
+            background: `linear-gradient(to bottom right, rgb(20 83 45), rgb(21 128 61), rgb(22 163 74)), url('/nairobi-bg.jpg.jpg')`,
+            backgroundSize: 'cover, cover',
+            backgroundPosition: 'center, center',
+            backgroundRepeat: 'no-repeat, no-repeat',
+            backgroundBlendMode: 'overlay'
+          }}
+        >
           <div
             className="absolute inset-0 opacity-10"
             style={{

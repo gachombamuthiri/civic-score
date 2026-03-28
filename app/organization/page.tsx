@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import {
   createEvent,
   getOrganizationEvents,
   getEventEnrollments,
   markAttendance,
+  getUserProfile,
+  createUserProfile,
+  deleteEvent,
   type CivicEvent,
   type Enrollment,
 } from "@/lib/firestore";
@@ -23,6 +27,7 @@ const CATEGORIES = [
 
 export default function OrganizationPortal() {
   const { user, isLoaded } = useUser();
+  const router = useRouter();
   const [events, setEvents] = useState<CivicEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CivicEvent | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -30,6 +35,7 @@ export default function OrganizationPortal() {
   const [activeTab, setActiveTab] = useState<"events" | "create">("events");
   const [marking, setMarking] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [viewMode, setViewMode] = useState<"view" | "mark">("mark");
 
   // Form state
   const [form, setForm] = useState({
@@ -41,12 +47,53 @@ export default function OrganizationPortal() {
     points: 50,
   });
 
+  // Check user role access and create profile if needed
+  useEffect(() => {
+    async function checkAccess() {
+      if (!user || !isLoaded) return;
+
+      try {
+        let profile = await getUserProfile(user.id);
+
+        // If no profile exists, create one for organization
+        if (!profile) {
+          await createUserProfile(
+            user.id,
+            user.fullName ?? "Organization",
+            user.primaryEmailAddress?.emailAddress ?? "",
+            "organization"
+          );
+          profile = await getUserProfile(user.id);
+        }
+      } catch (error) {
+        console.error("Access check failed:", error);
+      }
+    }
+
+    checkAccess();
+  }, [user, isLoaded, router]);
+
   useEffect(() => {
     async function loadEvents() {
       if (!user) return;
       try {
         const orgEvents = await getOrganizationEvents(user.id);
-        setEvents(orgEvents);
+        
+        // Load enrollment counts for each event
+        const eventsWithCounts = await Promise.all(
+          orgEvents.map(async (event) => {
+            if (!event.id) return { ...event, enrollmentCount: 0 };
+            try {
+              const enrollments = await getEventEnrollments(event.id);
+              return { ...event, enrollmentCount: enrollments.length };
+            } catch (error) {
+              console.error(`Error loading enrollments for event ${event.id}:`, error);
+              return { ...event, enrollmentCount: 0 };
+            }
+          })
+        );
+        
+        setEvents(eventsWithCounts);
       } catch (error) {
         console.error("Error loading events:", error);
       } finally {
@@ -67,6 +114,16 @@ export default function OrganizationPortal() {
     }
   }
 
+  async function viewEnrollments(event: CivicEvent) {
+    setViewMode("view");
+    await loadEnrollments(event);
+  }
+
+  async function markAttendanceMode(event: CivicEvent) {
+    setViewMode("mark");
+    await loadEnrollments(event);
+  }
+
   async function handleCreateEvent() {
     if (!user) return;
     if (!form.title || !form.location || !form.date) {
@@ -82,8 +139,21 @@ export default function OrganizationPortal() {
       setMessage({ type: "success", text: "Event created successfully!" });
       setForm({ title: "", description: "", category: "Blood Donation", location: "", date: "", points: 50 });
       setActiveTab("events");
+      
+      // Reload events with updated enrollment counts
       const orgEvents = await getOrganizationEvents(user.id);
-      setEvents(orgEvents);
+      const eventsWithCounts = await Promise.all(
+        orgEvents.map(async (event) => {
+          if (!event.id) return { ...event, enrollmentCount: 0 };
+          try {
+            const enrollments = await getEventEnrollments(event.id);
+            return { ...event, enrollmentCount: enrollments.length };
+          } catch (error) {
+            return { ...event, enrollmentCount: 0 };
+          }
+        })
+      );
+      setEvents(eventsWithCounts);
     } catch (error) {
       setMessage({ type: "error", text: "Failed to create event. Try again." });
       console.error(error);
@@ -104,6 +174,27 @@ export default function OrganizationPortal() {
       console.error(error);
     } finally {
       setMarking(null);
+    }
+  }
+
+  async function handleDeleteEvent(eventId: string) {
+    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      await deleteEvent(eventId);
+      setEvents((prev) => prev.filter((event) => event.id !== eventId));
+      setMessage({ type: "success", text: "Event deleted successfully!" });
+      
+      // If the deleted event was selected, clear the selection
+      if (selectedEvent?.id === eventId) {
+        setSelectedEvent(null);
+        setEnrollments([]);
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to delete event. Try again." });
+      console.error(error);
     }
   }
 
@@ -150,7 +241,7 @@ export default function OrganizationPortal() {
         {/* Tabs */}
         <div className="flex gap-2 mb-8">
           <button
-            onClick={() => { setActiveTab("events"); setSelectedEvent(null); setMessage(null); }}
+            onClick={() => { setActiveTab("events"); setSelectedEvent(null); setEnrollments([]); setViewMode("mark"); setMessage(null); }}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
               activeTab === "events"
                 ? "bg-green-700 text-white"
@@ -160,7 +251,7 @@ export default function OrganizationPortal() {
             My Events
           </button>
           <button
-            onClick={() => { setActiveTab("create"); setSelectedEvent(null); setMessage(null); }}
+            onClick={() => { setActiveTab("create"); setSelectedEvent(null); setEnrollments([]); setViewMode("mark"); setMessage(null); }}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
               activeTab === "create"
                 ? "bg-green-700 text-white"
@@ -274,21 +365,38 @@ export default function OrganizationPortal() {
             ) : (
               <div className="space-y-4">
                 {events.map((event) => (
-                  <div key={event.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div>
-                      <h3 className="font-black text-gray-900">{event.title}</h3>
-                      <p className="text-xs text-gray-500 mt-1">📅 {event.date} · 📍 {event.location}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">{event.category}</span>
-                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">+{event.points} pts</span>
+                  <div key={event.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-black text-gray-900">{event.title}</h3>
+                        <p className="text-xs text-gray-500 mt-1">📅 {event.date} · 📍 {event.location}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">{event.category}</span>
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">+{event.points} pts</span>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">👥 {event.enrollmentCount || 0} enrolled</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => viewEnrollments(event)}
+                          className="bg-blue-600 text-white text-sm font-bold px-3 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+                        >
+                          👁️ View ({event.enrollmentCount || 0})
+                        </button>
+                        <button
+                          onClick={() => markAttendanceMode(event)}
+                          className="bg-green-700 text-white text-sm font-bold px-3 py-2 rounded-xl hover:bg-green-800 transition-colors"
+                        >
+                          ✓ Mark
+                        </button>
+                        <button
+                          onClick={() => event.id && handleDeleteEvent(event.id)}
+                          className="bg-red-600 text-white text-sm font-bold px-3 py-2 rounded-xl hover:bg-red-700 transition-colors"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => loadEnrollments(event)}
-                      className="bg-green-700 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-green-800 transition-colors"
-                    >
-                      Mark Attendance →
-                    </button>
                   </div>
                 ))}
               </div>
@@ -296,21 +404,46 @@ export default function OrganizationPortal() {
           </div>
         )}
 
-        {/* Attendance Panel */}
+        {/* Attendance/Enrollments Panel */}
         {activeTab === "events" && selectedEvent && (
           <div>
-            <button
-              onClick={() => { setSelectedEvent(null); setEnrollments([]); }}
-              className="text-sm text-green-700 font-bold mb-6 hover:underline"
-            >
-              ← Back to Events
-            </button>
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => { setSelectedEvent(null); setEnrollments([]); }}
+                className="text-sm text-green-700 font-bold hover:underline"
+              >
+                ← Back to Events
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setViewMode("view")}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                    viewMode === "view"
+                      ? "bg-blue-700 text-white"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  👁️ View Enrollments
+                </button>
+                <button
+                  onClick={() => setViewMode("mark")}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                    viewMode === "mark"
+                      ? "bg-green-700 text-white"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-green-300"
+                  }`}
+                >
+                  ✓ Mark Attendance
+                </button>
+              </div>
+            </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
                 <h2 className="font-black text-gray-900">{selectedEvent.title}</h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {enrollments.length} enrolled · Check off citizens who attended
+                  {enrollments.length} enrolled citizens
+                  {viewMode === "mark" && " · Check off citizens who attended"}
                 </p>
               </div>
 
@@ -318,6 +451,9 @@ export default function OrganizationPortal() {
                 <div className="px-6 py-10 text-center">
                   <p className="text-3xl mb-3">👥</p>
                   <p className="text-sm font-semibold text-gray-600">No citizens enrolled yet</p>
+                  {viewMode === "view" && (
+                    <p className="text-xs text-gray-400 mt-2">Citizens can enroll through the activities page</p>
+                  )}
                 </div>
               ) : (
                 <ul className="divide-y divide-gray-50">
@@ -326,19 +462,30 @@ export default function OrganizationPortal() {
                       <div>
                         <p className="text-sm font-bold text-gray-800">{enrollment.userName}</p>
                         <p className="text-xs text-gray-400">{enrollment.userEmail}</p>
+                        <p className="text-xs text-gray-500 mt-1">📱 {enrollment.phone} · 🆔 {enrollment.idNumber}</p>
                       </div>
-                      {enrollment.attended ? (
-                        <span className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-bold">
-                          ✅ Attended · +{enrollment.points} pts awarded
-                        </span>
+                      {viewMode === "mark" ? (
+                        enrollment.attended ? (
+                          <span className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-bold">
+                            ✅ Attended · +{enrollment.points} pts awarded
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleMarkAttendance(enrollment)}
+                            disabled={marking === enrollment.id}
+                            className="bg-green-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-green-800 transition-colors disabled:opacity-50"
+                          >
+                            {marking === enrollment.id ? "Saving..." : "✓ Mark Attended"}
+                          </button>
+                        )
                       ) : (
-                        <button
-                          onClick={() => handleMarkAttendance(enrollment)}
-                          disabled={marking === enrollment.id}
-                          className="bg-green-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-green-800 transition-colors disabled:opacity-50"
-                        >
-                          {marking === enrollment.id ? "Saving..." : "✓ Mark Attended"}
-                        </button>
+                        <span className={`text-xs px-3 py-1.5 rounded-lg font-bold ${
+                          enrollment.attended
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}>
+                          {enrollment.attended ? "✅ Attended" : "⏳ Pending"}
+                        </span>
                       )}
                     </li>
                   ))}

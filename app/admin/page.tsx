@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { getAllUsers, getAllEvents, type UserProfile, type CivicEvent } from "@/lib/firestore";
+import { getAllUsers, getAllEvents, updateUserPoints, resetUserPoints, getTierFromPoints, type UserProfile, type CivicEvent } from "@/lib/firestore";
 
 // ⚠️ Only this Clerk ID can access the admin panel
 const ADMIN_ID = "user_3BB7zaNahq3K5B0GLT7uaNTS9HK";
@@ -17,6 +17,11 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [events, setEvents] = useState<CivicEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [showPointModal, setShowPointModal] = useState(false);
+  const [newPoints, setNewPoints] = useState("");
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -43,6 +48,69 @@ export default function AdminPanel() {
     }
     if (isLoaded) load();
   }, [user, isLoaded, router]);
+
+  // Filter users based on search query
+  const filteredUsers = users.filter((u) =>
+    u.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.role?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Point management functions
+  const handleResetPoints = async (user: UserProfile) => {
+    if (!confirm(`Are you sure you want to reset all points for ${user.fullName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await resetUserPoints(user.clerkId);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.clerkId === user.clerkId
+            ? { ...u, totalPoints: 0, redeemablePoints: 0, tier: "Bronze" }
+            : u
+        )
+      );
+      setMessage({ type: "success", text: `Points reset for ${user.fullName}` });
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to reset points" });
+      console.error(error);
+    }
+  };
+
+  const handleUpdatePoints = async () => {
+    if (!selectedUser || !newPoints) return;
+
+    const points = parseInt(newPoints);
+    if (isNaN(points) || points < 0) {
+      setMessage({ type: "error", text: "Please enter a valid number of points" });
+      return;
+    }
+
+    try {
+      await updateUserPoints(selectedUser.clerkId, points);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.clerkId === selectedUser.clerkId
+            ? { ...u, totalPoints: points, redeemablePoints: points, tier: getTierFromPoints(points) }
+            : u
+        )
+      );
+      setMessage({ type: "success", text: `Points updated for ${selectedUser.fullName}` });
+      setShowPointModal(false);
+      setSelectedUser(null);
+      setNewPoints("");
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to update points" });
+      console.error(error);
+    }
+  };
+
+  const openPointModal = (user: UserProfile) => {
+    setSelectedUser(user);
+    setNewPoints(user.totalPoints?.toString() || "0");
+    setShowPointModal(true);
+  };
 
   if (!isLoaded || loading) {
     return (
@@ -124,7 +192,7 @@ export default function AdminPanel() {
                 <button onClick={() => setTab("users")} className="text-xs text-green-700 font-semibold">View All →</button>
               </div>
               <ul className="divide-y divide-gray-50">
-                {users.slice(0, 5).map((u) => (
+                {filteredUsers.slice(0, 5).map((u) => (
                   <li key={u.clerkId} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center">
@@ -176,41 +244,139 @@ export default function AdminPanel() {
 
         {/* ── ALL USERS ── */}
         {tab === "users" && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="font-black text-gray-900">All Users ({users.length})</h2>
-            </div>
-            {/* Table Header */}
-            <div className="px-6 py-3 bg-gray-50 grid grid-cols-5 gap-4">
-              <span className="text-xs font-bold text-gray-500 uppercase col-span-2">User</span>
-              <span className="text-xs font-bold text-gray-500 uppercase">Role</span>
-              <span className="text-xs font-bold text-gray-500 uppercase">Tier</span>
-              <span className="text-xs font-bold text-gray-500 uppercase">Points</span>
-            </div>
-            <ul className="divide-y divide-gray-50">
-              {users.map((u) => (
-                <li key={u.clerkId} className="px-6 py-4 grid grid-cols-5 gap-4 items-center hover:bg-gray-50">
-                  <div className="col-span-2 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-black text-xs">{u.fullName?.charAt(0) ?? "?"}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-800 truncate">{u.fullName}</p>
-                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
-                    </div>
+          <div>
+            {/* Message */}
+            {message && (
+              <div className={`mb-6 px-4 py-3 rounded-xl text-sm font-semibold flex items-center justify-between ${
+                message.type === "success"
+                  ? "bg-green-100 text-green-700 border border-green-200"
+                  : "bg-red-100 text-red-700 border border-red-200"
+              }`}>
+                <span>{message.type === "success" ? "✅" : "❌"} {message.text}</span>
+                <button
+                  onClick={() => setMessage(null)}
+                  className="text-gray-400 hover:text-gray-600 ml-4"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-black text-gray-900">All Users ({filteredUsers.length})</h2>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                    />
                   </div>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full w-fit ${
-                    u.role === "organization"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-green-100 text-green-700"
-                  }`}>
-                    {u.role === "organization" ? "🏛️ Org" : "🧑 Citizen"}
-                  </span>
-                  <span className="text-xs font-bold text-gray-600">{u.tier ?? "Bronze"}</span>
-                  <span className="text-sm font-black text-gray-900">{(u.totalPoints ?? 0).toLocaleString()}</span>
-                </li>
-              ))}
-            </ul>
+                </div>
+              </div>
+
+              {/* Table Header */}
+              <div className="px-6 py-3 bg-gray-50 grid grid-cols-6 gap-4">
+                <span className="text-xs font-bold text-gray-500 uppercase col-span-2">User</span>
+                <span className="text-xs font-bold text-gray-500 uppercase">Role</span>
+                <span className="text-xs font-bold text-gray-500 uppercase">Tier</span>
+                <span className="text-xs font-bold text-gray-500 uppercase">Points</span>
+                <span className="text-xs font-bold text-gray-500 uppercase">Actions</span>
+              </div>
+
+              <ul className="divide-y divide-gray-50">
+                {filteredUsers.map((u) => (
+                  <li key={u.clerkId} className="px-6 py-4 grid grid-cols-6 gap-4 items-center hover:bg-gray-50">
+                    <div className="col-span-2 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-black text-xs">{u.fullName?.charAt(0) ?? "?"}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-800 truncate">{u.fullName}</p>
+                        <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full w-fit ${
+                      u.role === "organization"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-green-100 text-green-700"
+                    }`}>
+                      {u.role === "organization" ? "🏛️ Org" : "🧑 Citizen"}
+                    </span>
+                    <span className="text-xs font-bold text-gray-600">{u.tier ?? "Bronze"}</span>
+                    <span className="text-sm font-black text-gray-900">{(u.totalPoints ?? 0).toLocaleString()}</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openPointModal(u)}
+                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded font-bold hover:bg-blue-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleResetPoints(u)}
+                        className="text-xs bg-red-600 text-white px-2 py-1 rounded font-bold hover:bg-red-700"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {filteredUsers.length === 0 && searchQuery && (
+                <div className="px-6 py-10 text-center">
+                  <p className="text-3xl mb-3">🔍</p>
+                  <p className="text-sm font-semibold text-gray-600">No users found matching "{searchQuery}"</p>
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="text-xs text-green-700 font-semibold mt-2 hover:underline"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Point Edit Modal */}
+            {showPointModal && selectedUser && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                  <h3 className="font-black text-gray-900 mb-4">Edit Points for {selectedUser.fullName}</h3>
+                  <div className="mb-4">
+                    <label className="text-sm font-bold text-gray-600 mb-2 block">New Total Points</label>
+                    <input
+                      type="number"
+                      value={newPoints}
+                      onChange={(e) => setNewPoints(e.target.value)}
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                      placeholder="Enter points"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleUpdatePoints}
+                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700"
+                    >
+                      Update Points
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowPointModal(false);
+                        setSelectedUser(null);
+                        setNewPoints("");
+                      }}
+                      className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

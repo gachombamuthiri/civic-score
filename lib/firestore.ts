@@ -11,6 +11,7 @@ import {
   updateDoc,
   increment,
   serverTimestamp,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -40,6 +41,7 @@ export type CivicEvent = {
   organizationId: string;
   organizationName: string;
   createdAt: unknown;
+  enrollmentCount?: number; // Added for UI display
 };
 
 export type Enrollment = {
@@ -99,6 +101,20 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   return snap.docs.map((d) => d.data() as UserProfile);
 }
 
+export async function updateUserPoints(clerkId: string, newTotalPoints: number): Promise<void> {
+  const userRef = doc(db, "users", clerkId);
+  const newTier = getTierFromPoints(newTotalPoints);
+  await updateDoc(userRef, {
+    totalPoints: newTotalPoints,
+    redeemablePoints: newTotalPoints, // Reset redeemable points to match total
+    tier: newTier,
+  });
+}
+
+export async function resetUserPoints(clerkId: string): Promise<void> {
+  await updateUserPoints(clerkId, 0);
+}
+
 // ── Event Functions ─────────────────────────────────────
 
 export async function getAllEvents(): Promise<CivicEvent[]> {
@@ -113,6 +129,11 @@ export async function createEvent(event: Omit<CivicEvent, "id" | "createdAt">): 
     ...event,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function deleteEvent(eventId: string): Promise<void> {
+  const eventRef = doc(db, "events", eventId);
+  await deleteDoc(eventRef);
 }
 
 export async function getOrganizationEvents(organizationId: string): Promise<CivicEvent[]> {

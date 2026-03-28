@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createUserProfile } from "@/lib/firestore";
 import type { UserRole } from "@/lib/firestore";
 
-export default function RoleSelectPage() {
+function RoleSelectContent() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selected, setSelected] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Check if role is pre-selected from localStorage
+  useEffect(() => {
+    const storedRole = localStorage.getItem("selectedRole");
+    if (storedRole === 'citizen' || storedRole === 'organization') {
+      setSelected(storedRole);
+      // Clear the stored role after using it
+      localStorage.removeItem("selectedRole");
+    }
+  }, []);
 
   async function handleContinue() {
     if (!user || !selected) return;
@@ -33,6 +44,13 @@ export default function RoleSelectPage() {
       setLoading(false);
     }
   }
+
+  // Auto-continue if role is pre-selected
+  useEffect(() => {
+    if (selected && user && isLoaded) {
+      handleContinue();
+    }
+  }, [selected, user, isLoaded]);
 
   if (!isLoaded) return null;
 
@@ -143,5 +161,13 @@ export default function RoleSelectPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function RoleSelectPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-green-800 flex items-center justify-center"><div className="text-white">Loading...</div></div>}>
+      <RoleSelectContent />
+    </Suspense>
   );
 }
