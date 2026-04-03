@@ -1,0 +1,58 @@
+
+.activities-hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200vw;
+  height: 100%;
+  background-image: url('/activities-hero.jpg');
+  background-size: cover;
+  background-repeat: repeat-x;
+  background-position: 0 50%;
+  animation: pan-bg 40s linear infinite;
+  z-index: 1;
+}
+
+@keyframes pan-bg {
+  0% { background-position-x: 0; }
+  100% { background-position-x: -100vw; }
+}
+
+.activities-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0,77,64,0.55) 0%, rgba(8,123,144,0.45) 100%);
+  z-index: 2;
+}
+/*
+  This CSS animates the background image horizontally for a smooth panning effect.
+  The overlay uses a dark green gradient for text readability.
+*/
+
+.activities-hero {
+  position: relative;
+  width: 100vw;
+  min-height: 320px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+.activities-hero-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  padding: 3rem 1rem;
+}

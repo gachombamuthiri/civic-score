@@ -28,6 +28,8 @@ export type UserProfile = {
   redeemablePoints: number;
   tier: string;
   createdAt: unknown;
+  avatarType?: "bigfive" | "custom";
+  avatarUrl?: string;
 };
 
 export type CivicEvent = {
@@ -41,6 +43,7 @@ export type CivicEvent = {
   organizationId: string;
   organizationName: string;
   createdAt: unknown;
+  image?: string;
   enrollmentCount?: number; // Added for UI display
 };
 
@@ -113,6 +116,11 @@ export async function updateUserPoints(clerkId: string, newTotalPoints: number):
 
 export async function resetUserPoints(clerkId: string): Promise<void> {
   await updateUserPoints(clerkId, 0);
+}
+
+export async function updateUserProfile(clerkId: string, updates: Partial<Pick<UserProfile, "avatarType" | "avatarUrl">>): Promise<void> {
+  const userRef = doc(db, "users", clerkId);
+  await updateDoc(userRef, updates);
 }
 
 // ── Event Functions ─────────────────────────────────────

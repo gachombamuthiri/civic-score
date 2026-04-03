@@ -116,7 +116,7 @@ export default function AdminPanel() {
     return (
       <main className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-700 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-[#087B90] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500 font-semibold">Loading admin panel...</p>
         </div>
       </main>
@@ -133,16 +133,16 @@ export default function AdminPanel() {
     <main className="min-h-screen bg-gray-50 pt-20">
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-10">
+      <div className="bg-gradient-to-r from-[#087B90] to-[#0a8fa3] px-6 py-10">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
-            <span className="bg-red-500 text-white text-xs font-black px-3 py-1 rounded-full">
+            <span className="bg-[#303031] text-white text-xs font-black px-3 py-1 rounded-full">
               ADMIN
             </span>
-            <p className="text-gray-300 text-sm font-semibold">Restricted Access</p>
+            <p className="text-white/80 text-sm font-semibold">Restricted Access</p>
           </div>
           <h1 className="text-3xl font-black text-white">CivicScore Admin Panel</h1>
-          <p className="text-gray-300 text-sm mt-1">Full system overview and management</p>
+          <p className="text-white/70 text-sm mt-1">Full system overview and management</p>
         </div>
       </div>
 
@@ -156,8 +156,8 @@ export default function AdminPanel() {
               onClick={() => setTab(t)}
               className={`px-5 py-2.5 rounded-xl text-sm font-bold capitalize transition-colors ${
                 tab === t
-                  ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"
+                  ? "bg-[#303031] text-white"
+                  : "bg-white text-[#303031] border border-gray-200 hover:border-[#087B90]"
               }`}
             >
               {t === "overview" ? "📊 Overview" : t === "users" ? "👥 Users" : "📋 Events"}

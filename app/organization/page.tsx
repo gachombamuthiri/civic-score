@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import LandingFooter from "@/components/LandingFooter";
 import {
   createEvent,
   getOrganizationEvents,
@@ -44,7 +45,8 @@ export default function OrganizationPortal() {
     category: "Blood Donation",
     location: "",
     date: "",
-    points: 50,
+    points: 30,
+    image: "",
   });
 
   // Check user role access and create profile if needed
@@ -130,6 +132,10 @@ export default function OrganizationPortal() {
       setMessage({ type: "error", text: "Please fill in all required fields." });
       return;
     }
+    if (form.points < 30) {
+      setMessage({ type: "error", text: "Points must be at least 30." });
+      return;
+    }
     try {
       await createEvent({
         ...form,
@@ -137,7 +143,7 @@ export default function OrganizationPortal() {
         organizationName: user.fullName ?? "Organization",
       });
       setMessage({ type: "success", text: "Event created successfully!" });
-      setForm({ title: "", description: "", category: "Blood Donation", location: "", date: "", points: 50 });
+      setForm({ title: "", description: "", category: "Blood Donation", location: "", date: "", points: 30, image: "" });
       setActiveTab("events");
       
       // Reload events with updated enrollment counts
@@ -202,7 +208,7 @@ export default function OrganizationPortal() {
     return (
       <main className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-green-700 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-[#087B90] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500 font-semibold">Loading portal...</p>
         </div>
       </main>
@@ -213,13 +219,13 @@ export default function OrganizationPortal() {
     <main className="min-h-screen bg-gray-50 pt-20">
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-900 to-green-700 px-6 py-10">
+      <div className="bg-gradient-to-r from-[#087B90] to-[#0a8fa3] px-6 py-10">
         <div className="max-w-5xl mx-auto">
-          <p className="text-green-300 text-sm font-semibold mb-1">Organization Portal</p>
+          <p className="text-white/80 text-sm font-semibold mb-1">Organization Portal</p>
           <h1 className="text-3xl font-black text-white">
             {user?.fullName ?? "Organization"} Dashboard
           </h1>
-          <p className="text-green-200 text-sm mt-1">
+          <p className="text-white/70 text-sm mt-1">
             Create civic events and mark citizen attendance
           </p>
         </div>
@@ -309,10 +315,11 @@ export default function OrganizationPortal() {
                     type="number"
                     value={form.points}
                     onChange={(e) => setForm({ ...form, points: Number(e.target.value) })}
-                    min={10}
+                    min={30}
                     max={500}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Minimum 30 points required</p>
                 </div>
               </div>
 
@@ -335,6 +342,18 @@ export default function OrganizationPortal() {
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-1.5">Image URL</label>
+                <input
+                  type="url"
+                  value={form.image}
+                  onChange={(e) => setForm({ ...form, image: e.target.value })}
+                  placeholder="https://example.com/activity-image.jpg"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Optional: Add a photo URL to display on activity cards</p>
               </div>
 
               <button
@@ -496,6 +515,7 @@ export default function OrganizationPortal() {
         )}
 
       </div>
+      <LandingFooter />
     </main>
   );
 }

@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth, UserButton } from "@clerk/nextjs";
+import CivicScoreLogo from "./CivicScoreLogo";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -29,7 +30,6 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "My Dashboard" },
-    { href: "/leaderboard", label: "Leaderboard" },
     { href: "/activities", label: "Activities" },
     { href: "/organization", label: "Organization Portal" },
 
@@ -40,14 +40,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-green-700 rounded-lg flex items-center justify-center">
-            <span className="text-white font-black text-sm">CS</span>
-          </div>
-          <span className="text-xl font-black text-gray-900 tracking-tight">
-            Civic<span className="text-green-700">Score</span>
-          </span>
-        </Link>
+        <CivicScoreLogo href="/" />
 
         {/* Mobile menu button */}
         <button
@@ -127,12 +120,6 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link
-                href="/dashboard"
-                className="text-sm font-semibold text-green-700 hover:text-green-800 transition-colors mr-2"
-              >
-                Dashboard
-              </Link>
               <UserButton
                 appearance={{
                   elements: {

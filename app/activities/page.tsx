@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import ActivitiesHero from "@/components/ActivitiesHero";
+import CategoryFilters from "@/components/CategoryFilters";
+import FeaturedActivityCard from "@/components/FeaturedActivityCard";
+import UpcomingNearYou from "@/components/UpcomingNearYou";
+import ActivityCard from "@/components/ActivityCard";
+import LoadMore from "@/components/LoadMore";
+import SuggestActivityFAB from "@/components/SuggestActivityFAB";
+import LandingFooter from "@/components/LandingFooter";
 import {
   getAllEvents,
   enrollInEvent,
@@ -9,16 +17,6 @@ import {
   type CivicEvent,
   type Enrollment,
 } from "@/lib/firestore";
-
-const CATEGORY_ICONS: Record<string, string> = {
-  "Blood Donation": "🩸",
-  "Environmental": "🌿",
-  "Volunteering": "🤝",
-  "Community": "🏘️",
-  "Health": "🏥",
-  "Traffic": "🚦",
-  "Other": "📋",
-};
 
 export default function ActivitiesPage() {
   const { user, isLoaded } = useUser();
@@ -105,7 +103,7 @@ export default function ActivitiesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
+      <main className="min-h-screen bg-white pt-28 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-green-700 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500 font-semibold">Loading activities...</p>
@@ -115,29 +113,62 @@ export default function ActivitiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-20">
+    <main className="min-h-screen bg-white pt-28 pb-20 px-4 md:px-12">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Hero Section */}
+        <ActivitiesHero />
 
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-900 to-green-700 px-6 py-10">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-green-300 text-sm font-semibold mb-1">Earn Points</p>
-          <h1 className="text-3xl font-black text-white">Civic Activities</h1>
-          <p className="text-green-200 text-sm mt-1">
-            Browse and enroll in upcoming civic activities to earn points
-          </p>
+        {/* Category Filters */}
+        <CategoryFilters />
+
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mt-12">
+          {/* Featured Card - Takes 8 cols */}
+          {events.length > 0 && (
+            <FeaturedActivityCard
+              event={events[0]}
+              onEnroll={(event) => {
+                setEnrollingEvent(event);
+                setMessage(null);
+              }}
+            />
+          )}
+
+          {/* Upcoming Near You - Takes 4 cols */}
+          {events.length > 0 && (
+            <UpcomingNearYou events={events} />
+          )}
+
+          {/* Activity Cards Grid - Direct children of 12-col grid */}
+          {events.slice(1, 7).map((event) => (
+            <div key={event.id} className="md:col-span-4">
+              <ActivityCard
+                event={event}
+                enrolled={isEnrolled(event.id!)}
+                onEnroll={(evt) => {
+                  setEnrollingEvent(evt);
+                  setMessage(null);
+                }}
+              />
+            </div>
+          ))}
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+        {/* Load More Section */}
+        {events.length > 0 && (
+          <LoadMore 
+            totalCount={events.length} 
+            displayedCount={Math.min(7, events.length)}
+          />
+        )}
 
-        {/* Message */}
-        {message && (
-          <div className={`mb-6 px-4 py-3 rounded-xl text-sm font-semibold ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border border-green-200"
-              : "bg-red-100 text-red-700 border border-red-200"
-          }`}>
-            {message.type === "success" ? "✅" : "❌"} {message.text}
+        {/* Empty State */}
+        {events.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-5xl mb-4">📭</p>
+            <p className="text-lg font-bold text-gray-700">No activities available yet</p>
+            <p className="text-sm text-gray-400 mt-2">Check back soon — organizations are adding new activities!</p>
           </div>
         )}
 
@@ -202,7 +233,11 @@ export default function ActivitiesPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => { setEnrollingEvent(null); setForm({ idNumber: "", phone: "" }); setMessage(null); }}
+                  onClick={() => {
+                    setEnrollingEvent(null);
+                    setForm({ idNumber: "", phone: "" });
+                    setMessage(null);
+                  }}
                   className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors text-sm"
                 >
                   Cancel
@@ -219,71 +254,15 @@ export default function ActivitiesPage() {
           </div>
         )}
 
-        {/* Events Grid */}
-        {events.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-5xl mb-4">📭</p>
-            <p className="text-lg font-bold text-gray-700">No activities available yet</p>
-            <p className="text-sm text-gray-400 mt-2">Check back soon — organizations are adding new activities!</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {events.map((event) => {
-              const enrolled = isEnrolled(event.id!);
-              const icon = CATEGORY_ICONS[event.category] ?? "📋";
-              return (
-                <div
-                  key={event.id}
-                  className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${
-                    enrolled ? "border-green-200" : "border-gray-100"
-                  }`}
-                >
-                  {/* Card Header */}
-                  <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{icon}</span>
-                      <span className="text-xs font-bold text-green-200 uppercase tracking-widest">{event.category}</span>
-                    </div>
-                    <div className="bg-yellow-400 text-green-950 text-xs font-black px-3 py-1 rounded-full">
-                      +{event.points} pts
-                    </div>
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="px-6 py-5">
-                    <h3 className="text-lg font-black text-gray-900 mb-1">{event.title}</h3>
-                    <p className="text-sm text-gray-500 mb-4">{event.description}</p>
-                    <div className="space-y-1.5 mb-5">
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>📍</span><span>{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>📅</span><span>{event.date}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>🏛️</span><span>{event.organizationName}</span>
-                      </div>
-                    </div>
-
-                    {enrolled ? (
-                      <div className="w-full bg-green-50 border border-green-200 text-green-700 text-sm font-bold py-2.5 rounded-xl text-center">
-                        ✅ Enrolled — Show up to earn {event.points} points!
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => { setEnrollingEvent(event); setMessage(null); }}
-                        className="w-full bg-green-700 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-green-800 transition-colors"
-                      >
-                        Enroll Now →
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {message?.type === "success" && (
+          <div className="fixed top-28 left-4 right-4 bg-green-100 border border-green-200 text-green-700 text-sm font-semibold px-4 py-3 rounded-xl shadow-lg">
+            ✅ {message.text}
           </div>
         )}
       </div>
+
+      <SuggestActivityFAB />
+      <LandingFooter />
     </main>
   );
 }

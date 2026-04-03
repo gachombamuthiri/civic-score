@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
+import LandingFooter from "@/components/LandingFooter";
+import CivicScoreLogo from "@/components/CivicScoreLogo";
 import { createUserProfile } from "@/lib/firestore";
 import type { UserRole } from "@/lib/firestore";
 
@@ -61,12 +63,7 @@ function RoleSelectContent() {
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center">
-              <span className="text-green-950 font-black text-sm">CS</span>
-            </div>
-            <span className="text-2xl font-black text-white">
-              Civic<span className="text-yellow-400">Score</span>
-            </span>
+            <CivicScoreLogo href="/" dark={true} />
           </div>
           <h1 className="text-3xl font-black text-white mb-2">
             Welcome, {user?.firstName ?? "there"}! 👋
@@ -160,6 +157,7 @@ function RoleSelectContent() {
         </button>
 
       </div>
+      <LandingFooter />
     </main>
   );
 }

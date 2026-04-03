@@ -3,13 +3,76 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Material Design 3 Colors */
+  --md-primary: #004b24;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #84d999;
+  --md-on-primary-container: #002106;
+  --md-primary-fixed: #84d999;
+  --md-on-primary-fixed: #001e0d;
+  --md-on-primary-fixed-variant: #003d1e;
+  --md-secondary: #715c00;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #ffe08f;
+  --md-on-secondary-container: #221b00;
+  --md-secondary-fixed: #ffe08f;
+  --md-on-secondary-fixed: #3d3200;
+  --md-on-secondary-fixed-variant: #5d4900;
+  --md-tertiary: #006d6b;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #55f8f5;
+  --md-on-tertiary-container: #00201f;
+  --md-tertiary-fixed: #55f8f5;
+  --md-on-tertiary-fixed: #001d1c;
+  --md-on-tertiary-fixed-variant: #005555;
+  --md-surface: #fffbfe;
+  --md-on-surface: #1c1c1c;
+  --md-surface-dim: #dfd7df;
+  --md-surface-bright: #fffbfe;
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #f7eff5;
+  --md-surface-container: #f1e9f0;
+  --md-surface-container-high: #ebe3eb;
+  --md-surface-container-highest: #e6dce5;
+  --md-on-surface-variant: #49454f;
+  --md-outline: #79747e;
+  --md-outline-variant: #ccc7d0;
 }
 
 @theme inline {
+  --color-primary: var(--md-primary);
+  --color-on-primary: var(--md-on-primary);
+  --color-primary-container: var(--md-primary-container);
+  --color-on-primary-container: var(--md-on-primary-container);
+  --color-primary-fixed: var(--md-primary-fixed);
+  --color-on-primary-fixed: var(--md-on-primary-fixed);
+  --color-secondary: var(--md-secondary);
+  --color-on-secondary: var(--md-on-secondary);
+  --color-secondary-container: var(--md-secondary-container);
+  --color-on-secondary-container: var(--md-on-secondary-container);
+  --color-secondary-fixed: var(--md-secondary-fixed);
+  --color-on-secondary-fixed: var(--md-on-secondary-fixed);
+  --color-tertiary: var(--md-tertiary);
+  --color-on-tertiary: var(--md-on-tertiary);
+  --color-tertiary-container: var(--md-tertiary-container);
+  --color-on-tertiary-container: var(--md-on-tertiary-container);
+  --color-surface: var(--md-surface);
+  --color-on-surface: var(--md-on-surface);
+  --color-surface-dim: var(--md-surface-dim);
+  --color-surface-bright: var(--md-surface-bright);
+  --color-surface-container-lowest: var(--md-surface-container-lowest);
+  --color-surface-container-low: var(--md-surface-container-low);
+  --color-surface-container: var(--md-surface-container);
+  --color-surface-container-high: var(--md-surface-container-high);
+  --color-on-surface-variant: var(--md-on-surface-variant);
+  --color-outline: var(--md-outline);
+  --color-outline-variant: var(--md-outline-variant);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-headline: system-ui, -apple-system, sans-serif;
+  --font-body: system-ui, -apple-system, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

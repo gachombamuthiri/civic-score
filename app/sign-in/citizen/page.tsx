@@ -1,50 +1,48 @@
-import { SignIn } from "@clerk/nextjs";
-import Link from "next/link";
+import { SignIn } from '@clerk/nextjs';
+import AuthHeader from '@/components/AuthHeader';
+import AuthBrandingPanel from '@/components/AuthBrandingPanel';
+import AuthFooter from '@/components/AuthFooter';
+import Link from 'next/link';
 
 export default function CitizenSignInPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-green-800 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen flex flex-col">
+      <AuthHeader />
+      
+      <div className="flex-1">
+        <div className="grid grid-cols-12 min-h-[calc(100vh-80px)]">
+          {/* Left Branding Panel */}
+          <AuthBrandingPanel />
+          
+          {/* Right Sign In Form */}
+          <div className="lg:col-span-7 p-8 md:p-16 flex flex-col bg-white overflow-y-auto">
+            {/* Back Button */}
+            <Link 
+              href="/sign-in" 
+              className="text-green-700 font-bold mb-6 hover:underline flex items-center gap-1"
+            >
+              ← Change Role
+            </Link>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center">
-              <span className="text-green-950 font-black text-sm">CS</span>
+            {/* Role Indicator */}
+            <div className="inline-flex items-center gap-2 mb-6 bg-green-50 px-4 py-2 rounded-lg w-fit">
+              <span className="text-xl">🧑</span>
+              <span className="text-green-700 font-bold text-sm">Signing in as Citizen</span>
             </div>
-            <span className="text-2xl font-black text-white">
-              Civic<span className="text-yellow-400">Score</span>
-            </span>
+
+            <SignIn
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  card: "shadow-none border-0 bg-transparent p-0",
+                }
+              }}
+            />
           </div>
-          <p className="text-green-200 text-sm">👤 Sign in to your citizen account</p>
-          <p className="text-green-300 text-xs mt-1">Access your civic dashboard & activities</p>
         </div>
-
-        {/* Clerk Sign In Component */}
-        <div className="flex justify-center">
-          <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-2xl rounded-2xl border-0",
-                headerTitle: "text-gray-900 font-black",
-                headerSubtitle: "text-gray-500",
-                formButtonPrimary:
-                  "bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl",
-                footerActionLink: "text-green-700 font-semibold hover:text-green-800",
-              },
-            }}
-          />
-        </div>
-
-        {/* Back to role selection */}
-        <div className="text-center mt-6">
-          <Link href="/sign-in" className="text-green-200 text-sm hover:text-yellow-400">
-            ← Back to role selection
-          </Link>
-        </div>
-
       </div>
+
+      <AuthFooter />
     </main>
   );
 }
