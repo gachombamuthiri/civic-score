@@ -8,7 +8,6 @@ import LandingFooter from "@/components/LandingFooter";
 import {
   getUserProfile,
   updateUserProfile,
-  createUserProfile,
   type UserProfile,
 } from "@/lib/firestore";
 
@@ -36,14 +35,10 @@ export default function ProfilePage() {
       try {
         let userProfile = await getUserProfile(user.id);
 
+        // If no profile exists, redirect to role-select
         if (!userProfile) {
-          await createUserProfile(
-            user.id,
-            user.fullName ?? "Citizen",
-            user.primaryEmailAddress?.emailAddress ?? "",
-            "citizen"
-          );
-          userProfile = await getUserProfile(user.id);
+          router.push('/role-select');
+          return;
         }
 
         setProfile(userProfile);

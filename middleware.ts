@@ -10,11 +10,19 @@ const isProtectedRoute = createRouteMatcher([
   "/role-select(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+export default clerkMiddleware(
+  async (auth, req) => {
+    if (isProtectedRoute(req)) {
+      await auth.protect();
+    }
+  },
+  {
+    signInUrl: "/sign-in",
+    signUpUrl: "/sign-up",
+    afterSignInUrl: "/role-select",
+    afterSignUpUrl: "/role-select",
   }
-});
+);
 
 export const config = {
   matcher: [

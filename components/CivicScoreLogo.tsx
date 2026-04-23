@@ -1,23 +1,26 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface CivicScoreLogoProps {
   href?: string;
   showLabel?: boolean;
   dark?: boolean;
+  height?: number;
 }
 
-export default function CivicScoreLogo({ href = '/', showLabel = true, dark = false }: CivicScoreLogoProps) {
+export default function CivicScoreLogo({ href = '/', showLabel = false, dark = false, height = 50 }: CivicScoreLogoProps) {
   const content = (
-    <div className="flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow ${
-        dark 
-          ? 'bg-gradient-to-br from-yellow-400 to-yellow-500' 
-          : 'bg-gradient-to-br from-green-700 to-green-800'
-      }`}>
-        <span className={`text-lg font-black ${dark ? 'text-green-950' : 'text-white'}`}>CS</span>
-      </div>
+    <div className="flex items-center gap-2">
+      <Image
+        src="/civic-score-logo.jpg.png"
+        alt="CivicScore Logo"
+        width={height}
+        height={height}
+        className="h-auto"
+        priority
+      />
       {showLabel && (
         <div className="flex flex-col leading-tight">
           <span className={`text-xl font-black ${dark ? 'text-white' : 'text-green-700'}`}>Civic</span>

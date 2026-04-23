@@ -2,16 +2,26 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAuth, UserButton } from "@clerk/nextjs";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth, UserButton, useUser } from "@clerk/nextjs";
+import { useOrganization } from "@clerk/nextjs";
 import CivicScoreLogo from "./CivicScoreLogo";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import type { UserRole } from "@/lib/firestore";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const { organization } = useOrganization();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Load theme preference
   useEffect(() => {
     const saved = window.localStorage.getItem("civicScoreTheme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -20,6 +30,47 @@ export default function Navbar() {
     document.documentElement.classList.toggle("dark", dark);
   }, []);
 
+  // Load user role from Firestore
+  useEffect(() => {
+    async function loadUserRole() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // First check: Is user in a Clerk organization?
+        if (organization) {
+          console.log("User is in Clerk organization:", organization.id);
+          setUserRole(null); // Don't use Firestore role if in Clerk org
+          setLoading(false);
+          return;
+        }
+
+        // Second check: Get role from Firestore
+        const userRef = doc(db, "users", user.id);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const role = userSnap.data().role as UserRole;
+          console.log("Loaded Firestore role:", role);
+          setUserRole(role);
+        } else {
+          console.log("No Firestore profile found for user");
+        }
+      } catch (error) {
+        console.error("Error loading user role:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (isSignedIn && user) {
+      loadUserRole();
+    } else {
+      setLoading(false);
+    }
+  }, [user, isSignedIn, organization]);
+
   const toggleTheme = () => {
     const next = !isDarkMode;
     setIsDarkMode(next);
@@ -27,13 +78,68 @@ export default function Navbar() {
     window.localStorage.setItem("civicScoreTheme", next ? "dark" : "light");
   };
 
-  const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/dashboard", label: "My Dashboard" },
-    { href: "/activities", label: "Activities" },
-    { href: "/organization", label: "Organization Portal" },
+  // Determine if user is organization: check Clerk organization first, then Firestore role
+  const isOrgUser = !!organization || userRole === "organization";
 
-  ];
+  // Role-based navigation links
+  const getNavLinks = () => {
+    const commonLinks = [
+      { href: "/", label: "Home" },
+      { href: "/activities", label: "Activities" },
+    ];
+
+    if (!isSignedIn || loading) {
+      return commonLinks;
+    }
+
+    // If user is in a Clerk organization, they're an org user
+    if (organization) {
+      return [
+        { href: "/", label: "Home" },
+        { href: "/organization", label: "Organization Portal" },
+        { href: "/activities", label: "Activities" },
+      ];
+    }
+
+    // Otherwise check Firestore role
+    if (userRole === "citizen") {
+      return [
+        { href: "/", label: "Home" },
+        { href: "/dashboard", label: "My Dashboard" },
+        { href: "/activities", label: "Activities" },
+      ];
+    }
+
+    if (userRole === "organization") {
+      return [
+        { href: "/", label: "Home" },
+        { href: "/organization", label: "Organization Portal" },
+        { href: "/activities", label: "Activities" },
+      ];
+    }
+
+    return commonLinks;
+  };
+
+  const navLinks = getNavLinks();
+
+  // Redirect if accessing restricted pages
+  useEffect(() => {
+    if (loading) return; // Wait for role to load
+    
+    if (isSignedIn) {
+      // Organization users: redirect away from dashboard
+      if (isOrgUser && pathname === "/dashboard") {
+        router.push("/organization");
+        return;
+      }
+      // Citizen users: redirect away from organization portal
+      if (!isOrgUser && userRole === "citizen" && pathname === "/organization") {
+        router.push("/dashboard");
+        return;
+      }
+    }
+  }, [pathname, isSignedIn, isOrgUser, userRole, loading, router]);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 shadow-sm ${isDarkMode ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-gray-100 text-gray-900"}`}>

@@ -11,7 +11,6 @@ import {
   updateDoc,
   increment,
   serverTimestamp,
-  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -27,9 +26,21 @@ export type UserProfile = {
   totalPoints: number;
   redeemablePoints: number;
   tier: string;
-  createdAt: unknown;
-  avatarType?: "bigfive" | "custom";
+  avatarType?: "custom" | "bigfive";
   avatarUrl?: string;
+  createdAt: unknown;
+};
+
+export type OrganizationProfile = {
+  clerkId: string;
+  organizationName: string;
+  description?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  defaultPointsPerEvent?: number;
+  eventDuration?: number;
+  maxParticipants?: number;
+  createdAt: unknown;
 };
 
 export type CivicEvent = {
@@ -42,9 +53,9 @@ export type CivicEvent = {
   points: number;
   organizationId: string;
   organizationName: string;
-  createdAt: unknown;
   image?: string;
-  enrollmentCount?: number; // Added for UI display
+  enrollmentCount?: number;
+  createdAt: unknown;
 };
 
 export type Enrollment = {
@@ -64,19 +75,24 @@ export type Enrollment = {
 // ── Tier Helper ─────────────────────────────────────────
 
 export function getTierFromPoints(points: number): string {
-  if (points >= 2000) return "Elite";
-  if (points >= 1000) return "Gold";
-  if (points >= 500) return "Silver";
-  return "Bronze";
+  if (points >= 2000) return "Lion";
+  if (points >= 1000) return "Elephant";
+  if (points >= 500) return "Rhino";
+  return "Buffalo";
 }
 
 // ── User Functions ──────────────────────────────────────
 
 export async function getUserProfile(clerkId: string): Promise<UserProfile | null> {
-  const ref = doc(db, "users", clerkId);
-  const snap = await getDoc(ref);
-  if (snap.exists()) return snap.data() as UserProfile;
-  return null;
+  try {
+    const ref = doc(db, "users", clerkId);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return snap.data() as UserProfile;
+    return null;
+  } catch (error) {
+    console.error("getUserProfile error:", error);
+    return null;
+  }
 }
 
 export async function createUserProfile(
@@ -85,70 +101,75 @@ export async function createUserProfile(
   email: string,
   role: UserRole
 ): Promise<void> {
-  const ref = doc(db, "users", clerkId);
-  await setDoc(ref, {
-    clerkId,
-    fullName,
-    email,
-    role,
-    totalPoints: 0,
-    redeemablePoints: 0,
-    tier: "Bronze",
-    createdAt: serverTimestamp(),
-  });
+  try {
+    const ref = doc(db, "users", clerkId);
+    await setDoc(ref, {
+      clerkId,
+      fullName,
+      email,
+      role,
+      totalPoints: 0,
+      redeemablePoints: 0,
+      tier: "Buffalo",
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("createUserProfile error:", error);
+    throw error;
+  }
 }
 
 export async function getAllUsers(): Promise<UserProfile[]> {
-  const ref = collection(db, "users");
-  const snap = await getDocs(ref);
-  return snap.docs.map((d) => d.data() as UserProfile);
-}
-
-export async function updateUserPoints(clerkId: string, newTotalPoints: number): Promise<void> {
-  const userRef = doc(db, "users", clerkId);
-  const newTier = getTierFromPoints(newTotalPoints);
-  await updateDoc(userRef, {
-    totalPoints: newTotalPoints,
-    redeemablePoints: newTotalPoints, // Reset redeemable points to match total
-    tier: newTier,
-  });
-}
-
-export async function resetUserPoints(clerkId: string): Promise<void> {
-  await updateUserPoints(clerkId, 0);
-}
-
-export async function updateUserProfile(clerkId: string, updates: Partial<Pick<UserProfile, "avatarType" | "avatarUrl">>): Promise<void> {
-  const userRef = doc(db, "users", clerkId);
-  await updateDoc(userRef, updates);
+  try {
+    const ref = collection(db, "users");
+    const snap = await getDocs(ref);
+    return snap.docs.map((d) => d.data() as UserProfile);
+  } catch (error) {
+    console.error("getAllUsers error:", error);
+    return [];
+  }
 }
 
 // ── Event Functions ─────────────────────────────────────
 
 export async function getAllEvents(): Promise<CivicEvent[]> {
-  const ref = collection(db, "events");
-  const q = query(ref, orderBy("date", "asc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as CivicEvent));
+  try {
+    const ref = collection(db, "events");
+    const q = query(ref, orderBy("date", "asc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as CivicEvent));
+  } catch (error) {
+    console.error("getAllEvents error:", error);
+    return [];
+  }
 }
 
-export async function createEvent(event: Omit<CivicEvent, "id" | "createdAt">): Promise<void> {
-  await addDoc(collection(db, "events"), {
-    ...event,
-    createdAt: serverTimestamp(),
-  });
+export async function createEvent(
+  event: Omit<CivicEvent, "id" | "createdAt">
+): Promise<void> {
+  try {
+    await addDoc(collection(db, "events"), {
+      ...event,
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("createEvent error:", error);
+    throw error;
+  }
 }
 
-export async function deleteEvent(eventId: string): Promise<void> {
-  const eventRef = doc(db, "events", eventId);
-  await deleteDoc(eventRef);
-}
-
-export async function getOrganizationEvents(organizationId: string): Promise<CivicEvent[]> {
-  const ref = collection(db, "events");
-  const q = query(ref, where("organizationId", "==", organizationId));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as CivicEvent));
+export async function getOrganizationEvents(
+  organizationId: string
+): Promise<CivicEvent[]> {
+  try {
+    const ref = collection(db, "events");
+    const q = query(ref, where("organizationId", "==", organizationId));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as CivicEvent));
+  } catch (error) {
+    console.error("getOrganizationEvents error:", error);
+    return [];
+  }
 }
 
 // ── Enrollment Functions ────────────────────────────────
@@ -163,36 +184,52 @@ export async function enrollInEvent(
   idNumber: string,
   phone: string
 ): Promise<void> {
-  const existing = await getUserEnrollments(userId);
-  const alreadyEnrolled = existing.some((e) => e.eventId === eventId);
-  if (alreadyEnrolled) throw new Error("You are already enrolled in this activity!");
+  try {
+    // Check if already enrolled
+    const existing = await getUserEnrollments(userId);
+    const alreadyEnrolled = existing.some((e) => e.eventId === eventId);
+    if (alreadyEnrolled) throw new Error("You are already enrolled in this activity!");
 
-  await addDoc(collection(db, "enrollments"), {
-    eventId,
-    eventTitle,
-    userId,
-    userName,
-    userEmail,
-    idNumber,
-    phone,
-    points,
-    attended: false,
-    enrolledAt: serverTimestamp(),
-  });
+    await addDoc(collection(db, "enrollments"), {
+      eventId,
+      eventTitle,
+      userId,
+      userName,
+      userEmail,
+      idNumber,
+      phone,
+      points,
+      attended: false,
+      enrolledAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("enrollInEvent error:", error);
+    throw error;
+  }
 }
 
 export async function getUserEnrollments(userId: string): Promise<Enrollment[]> {
-  const ref = collection(db, "enrollments");
-  const q = query(ref, where("userId", "==", userId));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Enrollment));
+  try {
+    const ref = collection(db, "enrollments");
+    const q = query(ref, where("userId", "==", userId));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Enrollment));
+  } catch (error) {
+    console.error("getUserEnrollments error:", error);
+    return [];
+  }
 }
 
 export async function getEventEnrollments(eventId: string): Promise<Enrollment[]> {
-  const ref = collection(db, "enrollments");
-  const q = query(ref, where("eventId", "==", eventId));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Enrollment));
+  try {
+    const ref = collection(db, "enrollments");
+    const q = query(ref, where("eventId", "==", eventId));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Enrollment));
+  } catch (error) {
+    console.error("getEventEnrollments error:", error);
+    return [];
+  }
 }
 
 export async function markAttendance(
@@ -200,17 +237,101 @@ export async function markAttendance(
   userId: string,
   points: number
 ): Promise<void> {
-  const enrollmentRef = doc(db, "enrollments", enrollmentId);
-  await updateDoc(enrollmentRef, { attended: true });
+  try {
+    // 1. Mark enrollment as attended
+    const enrollmentRef = doc(db, "enrollments", enrollmentId);
+    await updateDoc(enrollmentRef, { attended: true });
 
-  const userRef = doc(db, "users", userId);
-  const userSnap = await getDoc(userRef);
-  const currentPoints = userSnap.data()?.totalPoints ?? 0;
-  const newPoints = currentPoints + points;
+    // 2. Add points to citizen automatically
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+    const currentPoints = userSnap.data()?.totalPoints ?? 0;
+    const newPoints = currentPoints + points;
 
-  await updateDoc(userRef, {
-    totalPoints: increment(points),
-    redeemablePoints: increment(points),
-    tier: getTierFromPoints(newPoints),
-  });
+    await updateDoc(userRef, {
+      totalPoints: increment(points),
+      redeemablePoints: increment(points),
+      tier: getTierFromPoints(newPoints),
+    });
+  } catch (error) {
+    console.error("markAttendance error:", error);
+    throw error;
+  }
+}
+
+// ── Admin Functions ────────────────────────────────────
+
+export async function updateUserPoints(
+  userId: string,
+  points: number
+): Promise<void> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+    const currentPoints = userSnap.data()?.totalPoints ?? 0;
+    const newPoints = Math.max(0, currentPoints + points);
+
+    await updateDoc(userRef, {
+      totalPoints: newPoints,
+      redeemablePoints: increment(points),
+      tier: getTierFromPoints(newPoints),
+    });
+  } catch (error) {
+    console.error("updateUserPoints error:", error);
+    throw error;
+  }
+}
+
+export async function resetUserPoints(userId: string): Promise<void> {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      totalPoints: 0,
+      redeemablePoints: 0,
+      tier: "Buffalo",
+    });
+  } catch (error) {
+    console.error("resetUserPoints error:", error);
+    throw error;
+  }
+}
+
+export async function updateUserProfile(
+  clerkId: string,
+  updates: Partial<UserProfile>
+): Promise<void> {
+  try {
+    const userRef = doc(db, "users", clerkId);
+    await updateDoc(userRef, updates);
+  } catch (error) {
+    console.error("updateUserProfile error:", error);
+    throw error;
+  }
+}
+
+export async function deleteEvent(eventId: string): Promise<void> {
+  try {
+    // Delete the event
+    const eventRef = doc(db, "events", eventId);
+    await updateDoc(eventRef, {
+      deleted: true,
+    });
+  } catch (error) {
+    console.error("deleteEvent error:", error);
+    throw error;
+  }
+}
+
+export async function getAllEventEnrollments(eventIds: string[]): Promise<Enrollment[]> {
+  try {
+    if (eventIds.length === 0) return [];
+    
+    const ref = collection(db, "enrollments");
+    const q = query(ref, where("eventId", "in", eventIds));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Enrollment));
+  } catch (error) {
+    console.error("getAllEventEnrollments error:", error);
+    return [];
+  }
 }

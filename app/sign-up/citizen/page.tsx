@@ -39,6 +39,7 @@ export default function CitizenSignUpPage() {
             </div>
 
             <SignUp
+              signInUrl="/sign-in/citizen"
               appearance={{
                 elements: {
                   rootBox: "w-full",

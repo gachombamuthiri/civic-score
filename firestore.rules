@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ── Utility Functions ──────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Allow unauthenticated access for development
+    // WARNING: This is for testing only. In production, implement proper authentication.
+    
+    // Events/Activities - allow public read, any write
+    match /events/{document=**} {
+      allow read, create, update, delete: if true;
+    }
+    
+    // Users - allow any read/write
+    match /users/{userId} {
+      allow read, create, update, delete: if true;
+    }
+    
+    // Enrollments - allow any read/write
+    match /enrollments/{document=**} {
+      allow read, create, update, delete: if true;
+    }
+    
+    // Rewards - allow public read, any write
+    match /rewards/{document=**} {
+      allow read, create, update, delete: if true;
+    }
+
+    // Default allow for development
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

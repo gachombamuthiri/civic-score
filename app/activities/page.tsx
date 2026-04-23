@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import ActivitiesHero from "@/components/ActivitiesHero";
 import CategoryFilters from "@/components/CategoryFilters";
 import FeaturedActivityCard from "@/components/FeaturedActivityCard";
@@ -14,14 +15,18 @@ import {
   getAllEvents,
   enrollInEvent,
   getUserEnrollments,
+  getUserProfile,
   type CivicEvent,
   type Enrollment,
+  type UserProfile,
 } from "@/lib/firestore";
 
 export default function ActivitiesPage() {
   const { user, isLoaded } = useUser();
+  const router = useRouter();
   const [events, setEvents] = useState<CivicEvent[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrollingEvent, setEnrollingEvent] = useState<CivicEvent | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,12 +41,21 @@ export default function ActivitiesPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [allEvents, userEnrollments] = await Promise.all([
+        const [allEvents, userEnrollments, profile] = await Promise.all([
           getAllEvents(),
           user ? getUserEnrollments(user.id) : Promise.resolve([]),
+          user ? getUserProfile(user.id) : Promise.resolve(null),
         ]);
         setEvents(allEvents);
         setEnrollments(userEnrollments);
+        
+        // If no profile exists, user hasn't completed role selection - redirect
+        if (user && !profile) {
+          router.push('/role-select');
+          return;
+        } else {
+          setUserProfile(profile);
+        }
       } catch (error) {
         console.error("Error loading activities:", error);
       } finally {
@@ -118,6 +132,20 @@ export default function ActivitiesPage() {
         
         {/* Hero Section */}
         <ActivitiesHero />
+
+        {/* User Points Card */}
+        {user && (
+          <div className="bg-gradient-to-r from-yellow-300 to-yellow-100 border-2 border-yellow-400 rounded-2xl p-6 mb-8 flex items-center justify-between">
+            <div>
+              <p className="text-yellow-700 font-bold uppercase tracking-widest text-xs mb-1">Your Civic Score</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-black text-yellow-900">{userProfile?.totalPoints ?? 0}</span>
+                <span className="text-yellow-700 font-bold">PTS</span>
+              </div>
+            </div>
+            <div className="text-6xl">⭐</div>
+          </div>
+        )}
 
         {/* Category Filters */}
         <CategoryFilters />

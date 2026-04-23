@@ -39,6 +39,7 @@ export default function OrganizationSignUpPage() {
             </div>
 
             <SignUp
+              signInUrl="/sign-in/organization"
               appearance={{
                 elements: {
                   rootBox: "w-full",
