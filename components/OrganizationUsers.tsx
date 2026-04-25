@@ -1,18 +1,20 @@
 'use client';
 
-import { Enrollment, UserProfile } from '@/lib/firestore';
+import { CivicEvent, Enrollment, UserProfile } from '@/lib/firestore';
 import { useState, useMemo } from 'react';
 
 interface OrganizationUsersProps {
   enrollments: Enrollment[];
   userProfiles: Map<string, UserProfile>;
   organizationEventIds: string[];
+  events: CivicEvent[];
 }
 
 export default function OrganizationUsers({
   enrollments,
   userProfiles,
   organizationEventIds,
+  events,
 }: OrganizationUsersProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -30,7 +32,7 @@ export default function OrganizationUsers({
       noShowCount: number;
       totalPointsEarned: number;
     }>();
-
+    const now = new Date();
     orgEnrollments.forEach(enrollment => {
       if (!stats.has(enrollment.userId)) {
         const userProfile = userProfiles.get(enrollment.userId);
@@ -47,16 +49,27 @@ export default function OrganizationUsers({
 
       const userStat = stats.get(enrollment.userId)!;
       userStat.totalEnrollments += 1;
+      if ((userStat.name === 'Unknown User' || !userStat.name) && enrollment.userName) {
+        userStat.name = enrollment.userName;
+      }
+      if ((userStat.email === 'No email' || !userStat.email) && enrollment.userEmail) {
+        userStat.email = enrollment.userEmail;
+      }
       if (enrollment.attended) {
         userStat.attendedCount += 1;
         userStat.totalPointsEarned += enrollment.points;
       } else {
-        userStat.noShowCount += 1;
+        // ONLY count as no-show if the event date has passed
+        const event = events.find(e => e.id === enrollment.eventId);
+        const eventDate = event ? new Date(event.date) : null;
+        if (eventDate && eventDate < now) {
+         userStat.noShowCount += 1;
       }
+    }
     });
 
     return Array.from(stats.values());
-  }, [enrollments, userProfiles, organizationEventIds]);
+  }, [orgEnrollments]);
 
   // Filter by search query
   const filteredUsers = useMemo(() => {

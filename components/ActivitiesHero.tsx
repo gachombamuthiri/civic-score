@@ -14,15 +14,6 @@ export default function ActivitiesHero() {
             Shape the future of Kenya through active participation. Every activity earns you points toward prestigious civic tiers.
           </p>
         </div>
-
-        {/* Score Card */}
-        <div className="bg-yellow-300 px-6 py-4 rounded-xl shadow-lg border-b-4 border-yellow-400 flex-shrink-0">
-          <span className="block text-yellow-900 font-bold text-xs uppercase tracking-wider mb-2">Your Score</span>
-          <div className="flex items-center gap-2">
-            <span className="text-3xl font-black text-yellow-900">1,420</span>
-            <span className="text-2xl">⭐</span>
-          </div>
-        </div>
       </div>
     </header>
   );

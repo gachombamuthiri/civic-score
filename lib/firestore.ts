@@ -335,3 +335,15 @@ export async function getAllEventEnrollments(eventIds: string[]): Promise<Enroll
     return [];
   }
 }
+export async function updateEvent(
+  eventId: string,
+  updates: Partial<CivicEvent>
+): Promise<void> {
+  try {
+    const eventRef = doc(db, "events", eventId);
+    await updateDoc(eventRef, updates);
+  } catch (error) {
+    console.error("updateEvent error:", error);
+    throw error;
+  }
+}

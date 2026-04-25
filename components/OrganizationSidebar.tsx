@@ -1,12 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation'; // Added this import
 
 interface OrganizationSidebarProps {
   activeTab?: 'events' | 'analytics' | 'attendance' | 'users' | 'settings';
 }
 
-export default function OrganizationSidebar({ activeTab = 'attendance' }: OrganizationSidebarProps) {
+export default function OrganizationSidebar({ activeTab: propActiveTab }: OrganizationSidebarProps) {
+  const searchParams = useSearchParams();
+  
+  // This line ensures the sidebar knows which tab is REALLY active from the URL
+  const activeTab = searchParams.get('tab') || propActiveTab || 'events';
+
   const navItems = [
     { id: 'events', label: 'Events', icon: '📅' },
     { id: 'analytics', label: 'Analytics', icon: '📊' },
@@ -41,12 +47,15 @@ export default function OrganizationSidebar({ activeTab = 'attendance' }: Organi
         ))}
       </nav>
 
-      {/* Create Event Button */}
+      {/* Create Event Button - Added Link to make it functional */}
       <div className="mt-auto pt-6 border-t border-zinc-200">
-        <button className="w-full bg-emerald-900 text-white rounded-lg py-3 px-4 font-bold text-sm flex items-center justify-center space-x-2 hover:bg-emerald-800 transition-all">
+        <Link 
+          href="/organization?tab=events"
+          className="w-full bg-emerald-900 text-white rounded-lg py-3 px-4 font-bold text-sm flex items-center justify-center space-x-2 hover:bg-emerald-800 transition-all"
+        >
           <span>➕</span>
           <span>Create Event</span>
-        </button>
+        </Link>
       </div>
     </aside>
   );
