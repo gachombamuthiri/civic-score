@@ -20,28 +20,46 @@ export default function Navbar() {
 
   useEffect(() => {
     async function loadUserRole() {
-      if (!user) { setLoading(false); return; }
+      if (!user) { 
+        setLoading(false); 
+        return; 
+      }
       try {
-        if (organization) { setUserRole("organization"); setLoading(false); return; }
+        // Priority 1: Check if user is in an active Clerk organization
+        if (organization) { 
+          setUserRole("organization"); 
+          setLoading(false); 
+          return; 
+        }
+
+        // Priority 2: Check Firestore for the user's role
         const userRef = doc(db, "users", user.id);
         const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) { setUserRole(userSnap.data().role as UserRole); }
-      } catch (error) { console.error("Error loading user role:", error); } finally { setLoading(false); }
+        if (userSnap.exists()) { 
+          setUserRole(userSnap.data().role as UserRole); 
+        }
+      } catch (error) { 
+        console.error("Error loading user role:", error); 
+      } finally { 
+        setLoading(false); 
+      }
     }
-    if (isSignedIn && user) { loadUserRole(); } else { setLoading(false); }
+
+    if (isSignedIn && user) { 
+      loadUserRole(); 
+    } else { 
+      setLoading(false); 
+    }
   }, [user, isSignedIn, organization]);
 
-  useEffect(() => {
-    if (loading || !isSignedIn) return;
-    if (userRole === "organization" && pathname === "/dashboard") { router.push("/organization"); }
-    if (userRole === "citizen" && pathname === "/organization") { router.push("/dashboard"); }
-  }, [pathname, isSignedIn, userRole, loading, router]);
+  // Determine the correct dashboard link based on role
+  const dashboardHref = userRole === "organization" ? "/organization" : "/dashboard";
 
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/activities", label: "Activities" },
-    ...(userRole === "organization" ? [{ href: "/organization", label: "Organization Portal" }] : []),
-    ...(userRole === "citizen" ? [{ href: "/dashboard", label: "My Dashboard" }] : []),
+    // Show the dynamic dashboard link only if signed in
+    ...(isSignedIn ? [{ href: dashboardHref, label: userRole === "organization" ? "Organization Portal" : "My Dashboard" }] : []),
   ];
 
   return (
@@ -50,13 +68,23 @@ export default function Navbar() {
         <CivicScoreLogo href="/" />
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className={`text-sm font-semibold ${pathname === link.href ? "text-green-700 border-b-2 border-green-700" : "text-gray-500 hover:text-gray-900"}`}>
+            <Link 
+              key={link.href} 
+              href={link.href} 
+              className={`text-sm font-semibold ${pathname === link.href ? "text-green-700 border-b-2 border-green-700" : "text-gray-500 hover:text-gray-900"}`}
+            >
               {link.label}
             </Link>
           ))}
         </div>
         <div className="flex items-center gap-3">
-          {!isSignedIn ? <Link href="/sign-up" className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">Get Started</Link> : <UserButton />}
+          {!isSignedIn ? (
+            <Link href="/sign-up" className="bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+              Get Started
+            </Link>
+          ) : (
+            <UserButton />
+          )}
         </div>
       </div>
     </nav>

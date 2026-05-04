@@ -20,17 +20,24 @@ export default function CitizenDashboard() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (!isSignedIn || !user) return;
+      if (!user) return;
 
       try {
-        let profile = await getUserProfile(user.id);
-
-        // If no profile exists, redirect to role-select
+        const profile = await getUserProfile(user.id);
+        
+        // Guard 1: If no profile exists, redirect to role-select
         if (!profile) {
           router.push('/role-select');
           return;
         }
 
+        // Guard 2: If user is an Organization, redirect to organization portal
+        if (profile.role === 'organization') {
+          router.push('/organization');
+          return;
+        }
+
+        // Only set profile if they are a citizen
         setUserProfile(profile);
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -48,12 +55,13 @@ export default function CitizenDashboard() {
     }
   }, [user, isSignedIn, isLoaded, router]);
 
-  if (loading) {
+  // Ensure the redirect doesn't fire before the Firestore data arrives
+  if (!isLoaded || loading) {
     return (
       <main className="pt-28 pb-20 px-4 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-emerald-900 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-zinc-500 font-semibold">Loading dashboard...</p>
+          <p className="text-zinc-500 font-semibold">Verifying access...</p>
         </div>
       </main>
     );

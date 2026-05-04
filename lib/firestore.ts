@@ -40,6 +40,8 @@ export type OrganizationProfile = {
   defaultPointsPerEvent?: number;
   eventDuration?: number;
   maxParticipants?: number;
+  status?: "pending" | "verified" | "suspended";
+  verifiedAt?: unknown;
   createdAt: unknown;
 };
 
@@ -55,6 +57,7 @@ export type CivicEvent = {
   organizationName: string;
   image?: string;
   enrollmentCount?: number;
+  status?: "active" | "flagged" | "cancelled";
   createdAt: unknown;
 };
 
@@ -345,5 +348,72 @@ export async function updateEvent(
   } catch (error) {
     console.error("updateEvent error:", error);
     throw error;
+  }
+}
+
+// ── Admin Authority Functions ──────────────────────────
+
+export async function getAllOrganizations(): Promise<OrganizationProfile[]> {
+  try {
+    const ref = collection(db, "organizations");
+    const snap = await getDocs(ref);
+    return snap.docs.map((d) => d.data() as OrganizationProfile);
+  } catch (error) {
+    console.error("getAllOrganizations error:", error);
+    return [];
+  }
+}
+
+export async function updateOrganizationStatus(
+  orgId: string,
+  status: "verified" | "suspended" | "pending"
+): Promise<void> {
+  try {
+    const ref = doc(db, "organizations", orgId);
+    await updateDoc(ref, {
+      status,
+      verifiedAt: status === "verified" ? serverTimestamp() : null,
+    });
+  } catch (error) {
+    console.error("updateOrganizationStatus error:", error);
+    throw error;
+  }
+}
+
+export async function updateEventStatus(
+  eventId: string,
+  status: "active" | "flagged" | "cancelled"
+): Promise<void> {
+  try {
+    const ref = doc(db, "events", eventId);
+    await updateDoc(ref, { status });
+  } catch (error) {
+    console.error("updateEventStatus error:", error);
+    throw error;
+  }
+}
+
+export async function getSystemStats() {
+  try {
+    const [users, events, enrollments] = await Promise.all([
+      getDocs(collection(db, "users")),
+      getDocs(collection(db, "events")),
+      getDocs(collection(db, "enrollments")),
+    ]);
+
+    const allUsers = users.docs.map(d => d.data() as UserProfile);
+    const totalPoints = allUsers.reduce((sum, u) => sum + (u.totalPoints || 0), 0);
+    
+    return {
+      totalUsers: users.size,
+      totalEvents: events.size,
+      totalEnrollments: enrollments.size,
+      totalPointsAwarded: totalPoints,
+      citizenCount: allUsers.filter(u => u.role === "citizen").length,
+      orgCount: allUsers.filter(u => u.role === "organization").length,
+    };
+  } catch (error) {
+    console.error("getSystemStats error:", error);
+    return null;
   }
 }

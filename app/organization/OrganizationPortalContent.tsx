@@ -13,6 +13,7 @@ import OrganizationAnalytics from "@/components/OrganizationAnalytics";
 import OrganizationUsers from "@/components/OrganizationUsers";
 import OrganizationSettings from "@/components/OrganizationSettings";
 import {
+  getUserProfile,
   getOrganizationEvents,
   getEventEnrollments,
   getAllEventEnrollments,
@@ -90,9 +91,24 @@ export default function OrganizationPortalContent() {
   };
 
   useEffect(() => {
+    async function checkRole() {
+      if (!user) return;
+      try {
+        const profile = await getUserProfile(user.id);
+        if (profile && profile.role === 'citizen') {
+          router.push('/dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking role:", error);
+      }
+    }
+
+    if (isLoaded) checkRole();
+
     if (orgLoaded && organization?.id) { loadEvents(); }
     else if (orgLoaded && !organization) { setLoading(false); }
-  }, [organization?.id, orgLoaded]);
+  }, [organization?.id, orgLoaded, user, isLoaded, router]);
 
   async function loadEnrollments(event: CivicEvent) {
     setSelectedEvent(event);
