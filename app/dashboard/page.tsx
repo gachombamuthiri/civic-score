@@ -49,9 +49,9 @@ export default function CitizenDashboard() {
     if (isLoaded) {
       if (!isSignedIn) {
         router.push('/sign-in');
-      } else {
-        loadProfile();
+        return;
       }
+      loadProfile();
     }
   }, [user, isSignedIn, isLoaded, router]);
 
