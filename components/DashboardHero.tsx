@@ -2,6 +2,7 @@
 
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
+import Image from 'next/image';
 import { UserProfile } from '@/lib/firestore';
 
 interface DashboardHeroProps {
@@ -14,6 +15,21 @@ export default function DashboardHero({ userProfile }: DashboardHeroProps) {
 
   return (
     <header className="mb-12">
+      <div className="flex items-center gap-4 mb-8">
+        <Image
+          src="/civic-score-logo.jpg.png"
+          alt="CivicScore Logo"
+          width={50}
+          height={50}
+          className="h-auto"
+        />
+        <Link href="/" className="hover:opacity-80 transition-opacity">
+          <div className="flex flex-col leading-tight">
+            <span className="text-xl font-black text-green-700">Civic</span>
+            <span className="text-xs font-bold text-yellow-600">SCORE</span>
+          </div>
+        </Link>
+      </div>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <p className="text-yellow-600 font-bold uppercase tracking-widest text-xs mb-2">Citizen Portal</p>
