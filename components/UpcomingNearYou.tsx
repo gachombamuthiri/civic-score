@@ -23,7 +23,7 @@ export default function UpcomingNearYou({ events }: UpcomingNearYouProps) {
 
   return (
     <div className="md:col-span-4 bg-gray-100 p-8 rounded-3xl">
-      <h3 className="text-xl font-black text-green-700 mb-6">Upcoming Near You</h3>
+      <h3 className="text-xl font-black text-green-700 mb-6">Upcoming Events</h3>
       <div className="space-y-6">
         {upcomingEvents.map((event, index) => (
           <div

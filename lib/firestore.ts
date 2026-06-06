@@ -78,8 +78,9 @@ export type Enrollment = {
 // ── Tier Helper ─────────────────────────────────────────
 
 export function getTierFromPoints(points: number): string {
-  if (points >= 2000) return "Lion";
-  if (points >= 1000) return "Elephant";
+  if (points >= 5000) return "Elephant Gold";
+  if (points >= 2500) return "Lion Silver";
+  if (points >= 1000) return "Leopard Bronze";
   if (points >= 500) return "Rhino";
   return "Buffalo";
 }
