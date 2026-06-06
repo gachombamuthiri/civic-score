@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         role,
         totalPoints: 0,
         redeemablePoints: 0,
-        tier: "Bronze",
+        tier: "Buffalo",
         createdAt: serverTimestamp(),
       });
       console.log("User profile created successfully for:", clerkId);

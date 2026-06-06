@@ -19,7 +19,7 @@ import {
 } from "@/lib/firestore";
 
 // ⚠️ Only this Clerk ID can access the admin panel
-const ADMIN_ID = "user_3BB7zaNahq3K5B0GLT7uaNTS9HK";
+const ADMIN_ID = process.env.NEXT_PUBLIC_ADMIN_CLERK_ID ?? "";
 
 type Tab = "overview" | "users" | "organizations" | "events" | "system";
 
