@@ -53,7 +53,7 @@ export default function CitizenDashboard() {
       }
       loadProfile();
     }
-  }, [user, isSignedIn, isLoaded, router]);
+  }, [user, isSignedIn, isLoaded]);
 
   // Ensure the redirect doesn't fire before the Firestore data arrives
   if (!isLoaded || loading) {
