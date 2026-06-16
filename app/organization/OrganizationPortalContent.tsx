@@ -69,10 +69,10 @@ export default function OrganizationPortalContent() {
   }, [searchParams]);
 
   const loadEvents = async () => {
-    if (!organization?.id) return;
+    if (!user?.id) return;
     setLoading(true);
     try {
-      const orgEvents = await getOrganizationEvents(organization.id);
+      const orgEvents = await getOrganizationEvents(user.id);
       const eventsWithCounts = await Promise.all(
         orgEvents.map(async (event) => {
           if (!event.id) return { ...event, enrollmentCount: 0 };
@@ -106,9 +106,8 @@ export default function OrganizationPortalContent() {
 
     if (isLoaded) checkRole();
 
-    if (orgLoaded && organization?.id) { loadEvents(); }
-    else if (orgLoaded && !organization) { setLoading(false); }
-  }, [organization?.id, orgLoaded, user, isLoaded, router]);
+    if (user?.id) { loadEvents(); }
+  }, [user?.id, isLoaded, router]);
 
   async function loadEnrollments(event: CivicEvent) {
     setSelectedEvent(event);
@@ -133,7 +132,7 @@ export default function OrganizationPortalContent() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!organization?.id || !organization?.name) return;
+    if (!user?.id || !user?.fullName) return;
     setProcessing(true);
     try {
       const defaultImages: Record<string, string> = {
@@ -142,8 +141,8 @@ export default function OrganizationPortalContent() {
       };
       await createEvent({
         ...formData,
-        organizationId: organization.id,
-        organizationName: organization.name,
+        organizationId: user.id,
+        organizationName: user.fullName,
         points: Number(formData.points),
         image: formData.image || defaultImages[formData.category] || '/karura.png',
       });
@@ -173,17 +172,17 @@ export default function OrganizationPortalContent() {
     setShowEditModal(true);
   };
 
-  if (!isLoaded || !orgLoaded || (loading && organization)) {
+  if (!isLoaded || (loading && user?.id)) {
     return <div className="min-h-screen flex items-center justify-center">Loading portal...</div>;
   }
 
-  if (!organization) {
+  // Check if user has organization role
+  if (!organizationProfile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Setup Your Organization</h1>
-        <CreateOrganization afterCreateOrganizationUrl="/organization" />
-        <div className="my-4">or</div>
-        <OrganizationSwitcher afterSelectOrganizationUrl="/organization" />
+        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+        <p className="text-gray-600 mb-6">This page is for organization accounts only.</p>
+        <a href="/dashboard" className="text-blue-600 hover:underline">Go to Dashboard</a>
       </div>
     );
   }
