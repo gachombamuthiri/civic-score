@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Internal documentation (do not commit)
+*_FIX.md
+*_IMPLEMENTATION.md
+*_FLOW.md
