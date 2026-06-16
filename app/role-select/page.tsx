@@ -100,7 +100,7 @@ export default function RoleSelectPage() {
       console.log("Auto-continuing with role:", selected);
       handleContinue();
     }
-  }, [selected]); // Only trigger when selected changes
+  }, [selected, isLoaded, membershipsLoaded, loading]);
 
   if (!isLoaded) return null;
 

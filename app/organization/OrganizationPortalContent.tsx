@@ -46,6 +46,7 @@ export default function OrganizationPortalContent() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfile>();
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
+  const [roleChecked, setRoleChecked] = useState(false);
 
   // Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -68,11 +69,11 @@ export default function OrganizationPortalContent() {
     setActiveTab(newTab);
   }, [searchParams]);
 
-  const loadEvents = async () => {
-    if (!user?.id) return;
+  const loadEvents = async (userId: string) => {
+    if (!organization?.id) return;
     setLoading(true);
     try {
-      const orgEvents = await getOrganizationEvents(user.id);
+      const orgEvents = await getOrganizationEvents(userId);
       const eventsWithCounts = await Promise.all(
         orgEvents.map(async (event) => {
           if (!event.id) return { ...event, enrollmentCount: 0 };
@@ -99,14 +100,25 @@ export default function OrganizationPortalContent() {
           router.push('/dashboard');
           return;
         }
+        if (profile) {
+      setOrganizationProfile({
+        clerkId: profile.clerkId,
+        organizationName: profile.fullName,
+        contactEmail: profile.email,
+        createdAt: profile.createdAt,
+      });
+    }
       } catch (error) {
         console.error("Error checking role:", error);
       }
+      finally {
+    setRoleChecked(true);  // mark done either way
+  }
     }
 
     if (isLoaded) checkRole();
 
-    if (user?.id) { loadEvents(); }
+    if (user?.id) { loadEvents(user.id); }
   }, [user?.id, isLoaded, router]);
 
   async function loadEnrollments(event: CivicEvent) {
@@ -149,7 +161,7 @@ export default function OrganizationPortalContent() {
       setMessage({ type: 'success', text: 'Event created successfully!' });
       setShowCreateModal(false);
       setFormData({ title: '', description: '', category: 'GOVERNANCE', location: '', date: '', points: 100, image: '' });
-      await loadEvents();
+      if (user?.id) await loadEvents(user.id);
     } catch (error) { setMessage({ type: 'error', text: 'Failed to create event.' }); } finally { setProcessing(false); }
   };
 
@@ -162,7 +174,7 @@ export default function OrganizationPortalContent() {
       setMessage({ type: 'success', text: 'Event updated successfully!' });
       setShowEditModal(false);
       setEditingEvent(null);
-      await loadEvents();
+      if (user?.id) await loadEvents(user.id);
     } catch (error) { setMessage({ type: 'error', text: 'Failed to update event.' }); } finally { setProcessing(false); }
   };
 
@@ -172,7 +184,7 @@ export default function OrganizationPortalContent() {
     setShowEditModal(true);
   };
 
-  if (!isLoaded || (loading && user?.id)) {
+  if (!isLoaded || loading || !roleChecked) {
     return <div className="min-h-screen flex items-center justify-center">Loading portal...</div>;
   }
 
@@ -199,7 +211,7 @@ export default function OrganizationPortalContent() {
             <OrganizationEventsManagement
               events={events}
               onEdit={openEditModal}
-              onDelete={async (id) => { if(confirm("Delete?")) { await deleteEvent(id); loadEvents(); } }}
+              onDelete={async (id) => { if(confirm("Delete?")) { await deleteEvent(id); if (user?.id) await loadEvents(user.id); } }}
               onCreateNew={() => { setFormData({ title: '', description: '', category: 'GOVERNANCE', location: '', date: '', points: 100, image: '' }); setShowCreateModal(true); }}
             />
           )}
