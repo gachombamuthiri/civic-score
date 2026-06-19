@@ -23,7 +23,7 @@ export default function OrganizationSignUpPage() {
           <AuthBrandingPanel />
           
           {/* Right Sign Up Form */}
-          <div className="lg:col-span-7 p-8 md:p-16 flex flex-col bg-white overflow-y-auto">
+          <div className="col-span-12 lg:col-span-7 p-8 md:p-16 flex flex-col bg-white overflow-y-auto">
             {/* Back Button */}
             <Link 
               href="/sign-up" 
