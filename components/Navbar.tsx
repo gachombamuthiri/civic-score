@@ -17,6 +17,7 @@ export default function Navbar() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     async function loadUserRole() {
@@ -85,8 +86,32 @@ export default function Navbar() {
           ) : (
             <UserButton />
           )}
+          <button
+            className="md:hidden p-2 text-gray-700"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? "✕" : "☰"}
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="md:hidden border-t border-gray-100 bg-white px-6 py-4 flex flex-col gap-4">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold ${pathname === link.href ? "text-green-700" : "text-gray-500"}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }
+  
+
