@@ -344,6 +344,21 @@ export default function RewardsCatalog({ userPoints, userId, onPointsUpdate }: {
           </div>
         </div>
       )}
+      <footer className="mt-20 border-t border-zinc-100 pt-8 pb-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-400 font-medium">
+          <div className="text-left">
+            <p className="font-bold text-zinc-500 text-sm tracking-tight flex items-center gap-1">
+              <span>⚖️</span> CivicScore
+            </p>
+            <p className="text-[10px] mt-0.5 leading-normal max-w-md">
+              A Web-Based Citizen Compliance and Reward Points Management System for Promoting Law-Abiding Behaviour in Kenya.
+            </p>
+          </div>
+          <div className="text-center md:text-right shrink-0 text-[10px] tracking-wider uppercase font-bold text-zinc-400">
+            <p>© 2026 All Rights Reserved</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
