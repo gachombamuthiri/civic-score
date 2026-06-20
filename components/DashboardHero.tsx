@@ -40,9 +40,11 @@ export default function DashboardHero({ userProfile }: DashboardHeroProps) {
           <Link href="/activities" className="bg-green-700 text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:bg-green-800 transition-all">
             Find Events
           </Link>
-          <button className="bg-yellow-300 text-yellow-900 px-6 py-3 rounded-full font-bold text-sm shadow-md hover:shadow-lg hover:bg-yellow-400 transition-all">
-            Redeem Points
-          </button>
+          <Link href="/dashboard/rewards">
+            <button className="bg-yellow-300 text-yellow-900 px-6 py-3 rounded-full font-bold text-sm shadow-md hover:shadow-lg hover:bg-yellow-400 transition-all">
+              Redeem Points
+            </button>
+          </Link>
         </div>
       </div>
     </header>
