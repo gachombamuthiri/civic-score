@@ -17,11 +17,12 @@ import {
   type CivicEvent,
   type OrganizationProfile
 } from "@/lib/firestore";
+import AdminRewardForm from "@/components/AdminRewardForm";
 
 // ⚠️ Only this Clerk ID can access the admin panel
 const ADMIN_ID = process.env.NEXT_PUBLIC_ADMIN_CLERK_ID ?? "";
 
-type Tab = "overview" | "users" | "organizations" | "events" | "system";
+type Tab = "overview" | "users" | "organizations" | "events" | "rewards" | "system";
 
 export default function AdminPanel() {
   const { user, isLoaded } = useUser();
@@ -181,7 +182,7 @@ export default function AdminPanel() {
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {(["overview", "users", "organizations", "events", "system"] as Tab[]).map((t) => (
+          {(["overview", "users", "organizations", "events", "rewards", "system"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -194,7 +195,8 @@ export default function AdminPanel() {
               {t === "overview" ? "📊 Overview" : 
                t === "users" ? "👥 Users" : 
                t === "organizations" ? "🏛️ Organizations" : 
-               t === "events" ? "📋 Events" : "⚙️ System"}
+               t === "events" ? "📋 Events" : 
+               t === "rewards" ? "🎁 Rewards" : "⚙️ System"}
             </button>
           ))}
         </div>
@@ -440,6 +442,17 @@ export default function AdminPanel() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ── REWARDS TAB ── */}
+        {tab === "rewards" && (
+          <div>
+            <div className="mb-6">
+              <h2 className="font-black text-xl text-gray-900">Rewards Management</h2>
+              <p className="text-sm text-gray-500">Add new rewards to the redemption catalog.</p>
+            </div>
+            <AdminRewardForm />
           </div>
         )}
 

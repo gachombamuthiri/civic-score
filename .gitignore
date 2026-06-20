@@ -47,3 +47,6 @@ next-env.d.ts
 TESTING_GUIDE.md
 PRESENTATION_READINESS.md
 IMPROVEMENTS.md
+
+# clerk configuration (can include secrets)
+/.clerk/
