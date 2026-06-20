@@ -344,20 +344,32 @@ export default function RewardsCatalog({ userPoints, userId, onPointsUpdate }: {
           </div>
         </div>
       )}
-      <footer className="mt-20 border-t border-zinc-100 pt-8 pb-4">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-400 font-medium">
-          <div className="text-left">
-            <p className="font-bold text-zinc-500 text-sm tracking-tight flex items-center gap-1">
-              <span>⚖️</span> CivicScore
-            </p>
-            <p className="text-[10px] mt-0.5 leading-normal max-w-md">
-              A Web-Based Citizen Compliance and Reward Points Management System for Promoting Law-Abiding Behaviour in Kenya.
-            </p>
-          </div>
-          <div className="text-center md:text-right shrink-0 text-[10px] tracking-wider uppercase font-bold text-zinc-400">
-            <p>© 2026 All Rights Reserved</p>
-          </div>
+      <footer className="mt-24 border-t border-zinc-100 pt-12 pb-8 flex flex-col items-center text-center">
+        
+        {/* Main Branding Logo text */}
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+          CivicScore
+        </h2>
+        
+        {/* Capitalized, tracked subtitle tag */}
+        <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mt-1">
+          The Modern Heritage
+        </p>
+
+        {/* Center line item links with separation bullets */}
+        <div className="flex items-center justify-center gap-3 text-xs text-slate-500 font-medium mt-6">
+          <a href="#privacy" className="hover:text-emerald-800 transition-colors">Privacy Policy</a>
+          <span className="text-zinc-300 select-none text-[10px]">•</span>
+          <a href="#terms" className="hover:text-emerald-800 transition-colors">Terms of Service</a>
+          <span className="text-zinc-300 select-none text-[10px]">•</span>
+          <a href="#support" className="hover:text-emerald-800 transition-colors">Contact Support</a>
         </div>
+
+        {/* Legal statement matching current calendar cycle timeline */}
+        <p className="text-xs text-slate-400 mt-6 leading-normal">
+          © 2026 <span className="font-semibold text-slate-700">CivicScore Kenya</span>. Empowering community growth through civic participation.
+        </p>
+
       </footer>
     </div>
   );
