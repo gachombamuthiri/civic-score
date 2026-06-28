@@ -31,7 +31,8 @@ export default function ActivitiesPage() {
   const [enrollingEvent, setEnrollingEvent] = useState<CivicEvent | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
+  const [viewingEvent, setViewingEvent] = useState<CivicEvent | null>(null);
+  
   // Enrollment form
   const [form, setForm] = useState({
     idNumber: "",
@@ -178,6 +179,7 @@ export default function ActivitiesPage() {
                   setEnrollingEvent(evt);
                   setMessage(null);
                 }}
+                onViewDetails={(evt) => setViewingEvent(evt)}
               />
             </div>
           ))}
@@ -281,7 +283,48 @@ export default function ActivitiesPage() {
             </div>
           </div>
         )}
+        {viewingEvent && (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4" onClick={() => setViewingEvent(null)}>
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8" onClick={(e) => e.stopPropagation()}>
+      <span className="text-xs font-black text-yellow-700 tracking-widest uppercase bg-yellow-100 px-3 py-1 rounded-lg">
+        {viewingEvent.category}
+      </span>
+      <h2 className="text-xl font-black text-gray-900 mt-3 mb-2">{viewingEvent.title}</h2>
+      <p className="text-gray-600 text-sm mb-6">{viewingEvent.description}</p>
 
+      <div className="space-y-3 mb-6">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Organization</span>
+          <span className="font-bold text-gray-900">{viewingEvent.organizationName}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Location</span>
+          <span className="font-bold text-gray-900">{viewingEvent.location}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Date</span>
+          <span className="font-bold text-gray-900">{viewingEvent.date}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Points</span>
+          <span className="font-bold text-green-700">+{viewingEvent.points} pts</span>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={() => setViewingEvent(null)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-xl text-sm">
+          Close
+        </button>
+        <button
+          onClick={() => { setEnrollingEvent(viewingEvent); setViewingEvent(null); setMessage(null); }}
+          className="flex-1 bg-green-700 text-white font-bold py-3 rounded-xl text-sm"
+        >
+          Enroll →
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         {message?.type === "success" && (
           <div className="fixed top-28 left-4 right-4 bg-green-100 border border-green-200 text-green-700 text-sm font-semibold px-4 py-3 rounded-xl shadow-lg">
             ✅ {message.text}

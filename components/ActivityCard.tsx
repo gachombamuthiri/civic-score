@@ -7,6 +7,7 @@ interface ActivityCardProps {
   event: CivicEvent;
   enrolled?: boolean;
   onEnroll?: (event: CivicEvent) => void;
+  onViewDetails?: (event: CivicEvent) => void;
 }
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -31,11 +32,13 @@ const PLACEHOLDER_IMAGES: Record<string, string> = {
   'Other': 'civic-activity',
 };
 
-export default function ActivityCard({ event, enrolled = false, onEnroll }: ActivityCardProps) {
+export default function ActivityCard({ event, enrolled = false, onEnroll, onViewDetails }: ActivityCardProps) {
   const emoji = CATEGORY_EMOJI[event.category] || '📋';
   
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-gray-200 group">
+    <div 
+        onClick={() => onViewDetails?.(event)}
+        className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-gray-200 group">
       {/* Image */}
       <div className="aspect-[4/3] w-full rounded-xl overflow-hidden mb-6 relative bg-gradient-to-br from-green-100 to-green-50">
         {event.image ? (
@@ -79,7 +82,7 @@ export default function ActivityCard({ event, enrolled = false, onEnroll }: Acti
           </div>
         ) : (
           <button
-            onClick={() => onEnroll?.(event)}
+            onClick={(e) => { e.stopPropagation();  onEnroll?.(event); }}
             className="bg-green-700 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-800 transition-all active:scale-95"
           >
             Enroll
